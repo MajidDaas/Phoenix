@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix Council Elections</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <button class="admin-btn" id="adminBtn">
+        <i class="fas fa-cog"></i> Admin
+    </button>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <!-- Phoenix Logo SVG -->
+                <svg class="phoenix-logo" viewBox="0 0 100 100">
+                    <path d="M50,15 C60,5 80,10 85,25 C90,40 80,50 70,55 C80,60 90,70 85,85 C80,100 60,95 50,85 C40,95 20,100 15,85 C10,70 20,60 30,55 C20,50 10,40 15,25 C20,10 40,5 50,15 Z" fill="#009657"/>
+                    <path d="M30,30 C35,25 45,25 50,30 C55,25 65,25 70,30 L65,40 C60,35 50,35 45,40 L40,50 L35,40 C30,35 25,35 20,40 L15,30 C20,25 25,25 30,30 Z" fill="#E74C3C"/>
+                    <circle cx="40" cy="40" r="3" fill="#FFFFFF"/>
+                    <circle cx="60" cy="40" r="3" fill="#FFFFFF"/>
+                    <path d="M45,50 Q50,55 55,50" stroke="#FFFFFF" stroke-width="2" fill="none"/>
+                </svg>
+                <h1>Phoenix Council Elections</h1>
+            </div>
+            <p>Elect 15 Council Members (7 Executive Officers)</p>
+        </div>
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" data-tab="vote">
+                    <i class="fas fa-vote-yea"></i> Cast Vote
+                </button>
+                <button class="tab" data-tab="results">
+                    <i class="fas fa-chart-bar"></i> View Results
+                </button>
+                <button class="tab" data-tab="info">
+                    <i class="fas fa-info-circle"></i> Information
+                </button>
+            </div>
+            <!-- Voting Tab -->
+            <div class="tab-content active" id="vote">
+                <h2><i class="fas fa-vote-yea"></i> Cast Your Vote</h2>
+                <div id="step1" class="card step-card">
+                    <h3><i class="fas fa-envelope"></i> Step 1: Request Your Voter ID</h3>
+                    <div class="form-group">
+                        <label for="voterEmail">Your Registered Email Address:</label>
+                        <input type="email" id="voterEmail" placeholder="Enter your registered email address">
+                    </div>
+                    <div class="form-group">
+                        <label for="voterPhone">Your Phone Number (last 4 digits):</label>
+                        <input type="text" id="voterPhone" placeholder="Last 4 digits of your phone" maxlength="4">
+                    </div>
+                    <button class="btn" id="requestVoterBtn">
+                        <i class="fas fa-paper-plane"></i> Request Voter ID via Email
+                    </button>
+                    <div class="skip-id-request">
+                        <button class="btn" id="skipIdRequestBtn">
+                            <i class="fas fa-forward"></i> Skip ID Request (Demo)
+                        </button>
+                    </div>
+                    <div id="requestLoading" class="loader hidden"></div>
+                </div>
+                <div id="step2" class="card step-card hidden">
+                    <h3><i class="fas fa-envelope-open-text"></i> Step 2: Check Your Email</h3>
+                    <div class="status-info">
+                        <p><strong>📧 Voter ID Sent to Your Email</strong></p>
+                        <p>Your unique voter ID has been sent to your registered email address.</p>
+                        <p>Please check your email (including spam folder) and copy the voter ID.</p>
+                        <p><strong>Security Note:</strong> Only the person with access to your email can retrieve the ID.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailVoterId">Enter Voter ID from Email:</label>
+                        <input type="text" id="emailVoterId" placeholder="Paste your voter ID from the email">
+                    </div>
+                    <button class="btn" id="verifyVoterBtn">
+                        <i class="fas fa-check-circle"></i> Verify Voter ID & Continue
+                    </button>
+                    <div id="verifyLoading" class="loader hidden"></div>
+                </div>
+                <div id="step3" class="hidden">
+                    <div class="status-success">
+                        <p><strong>✅ Email Verified Successfully!</strong></p>
+                        <p>Your voter ID: <strong id="confirmedVoterId"></strong></p>
+                    </div>
+                    <div class="instructions">
+                        <h4><i class="fas fa-info-circle"></i> Voting Instructions</h4>
+                        <ol>
+                            <li>Your identity has been verified through email</li>
+                            <li>Click on candidates to select them for council (15 total)</li>
+                            <li>Click again on selected candidates to mark as Executive Officers (7 total)</li>
+                            <li>Click a third time to deselect a candidate</li>
+                            <li>Submit your vote when you've selected 15 candidates (7 as EOs)</li>
+                        </ol>
+                    </div>
+                    <div class="vote-summary">
+                        <div class="vote-stat">
+                            <h4 id="selectedCount">0</h4>
+                            <p>Council Selected</p>
+                        </div>
+                        <div class="vote-stat">
+                            <h4 id="executiveCount">0</h4>
+                            <p>Executive Selected</p>
+                        </div>
+                    </div>
+                    <div class="candidate-list" id="candidateList">
+                        <!-- Candidates will be populated by JavaScript -->
+                    </div>
+                    <div class="text-center mt-30">
+                        <button class="btn" id="submitVoteBtn" disabled>
+                            <i class="fas fa-check-circle"></i> Submit Your Vote
+                        </button>
+                        <div id="submitLoading" class="loader hidden"></div>
+                    </div>
+                </div>
+                <div id="electionClosedMessage" class="status-error hidden">
+                    <p><i class="fas fa-exclamation-circle"></i> Voting is currently closed. Please check back when elections are open.</p>
+                </div>
+            </div>
+            <!-- Results Tab -->
+            <div class="tab-content" id="results">
+                <h2><i class="fas fa-chart-bar"></i> Election Results</h2>
+                <div class="card">
+                    <div class="election-status" id="electionStatus">
+                        <i class="fas fa-lock"></i> Election is currently open
+                    </div>
+                    <div class="vote-summary">
+                        <div class="vote-stat neutral">
+                            <h4 id="totalCandidates">0</h4>
+                            <p>Total Candidates</p>
+                        </div>
+                        <div class="vote-stat neutral">
+                            <h4 id="voterTurnout">Elections in Progress</h4>
+                            <p>Voter Turnout</p>
+                        </div>
+                    </div>
+                    <div id="resultsContent">
+                        <div class="status-info">
+                            <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Information Tab -->
+            <div class="tab-content" id="info">
+                <h2><i class="fas fa-info-circle"></i> Election Information</h2>
+                <div class="card">
+                    <h3><i class="fas fa-question-circle"></i> How It Works</h3>
+                    <p>The Phoenix Council election system allows you to vote for 15 council members, with 7 of them serving as executive officers.</p>
+                    <div class="form-group">
+                        <h4><i class="fas fa-list-ol"></i> Voting Process</h4>
+                        <ol>
+                            <li>Request your voter ID using your registered email and phone number</li>
+                            <li>Check your email for the voter ID</li>
+                            <li>Verify your voter ID in the system</li>
+                            <li>Click on candidate cards to select them for council</li>
+                            <li>Click again on selected candidates to designate as Executive Officers</li>
+                            <li>Click a third time to deselect a candidate</li>
+                            <li>Submit your vote when you've selected 15 candidates (7 as EOs)</li>
+                        </ol>
+                    </div>
+                    <div class="status-info">
+                        <p><i class="fas fa-shield-alt"></i> Your vote is secure and anonymous. The system uses advanced encryption to protect your privacy.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-users"></i> Meet the Candidates</h3>
+                    <p>Learn more about the individuals running for council positions.</p>
+                    <div class="candidate-list">
+                        <div class="candidate-item">
+                            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Candidate" class="candidate-image">
+                            <div class="candidate-name">Sarah Johnson</div>
+                            <div class="candidate-position">Community Advocate</div>
+                            <p>20 years of experience in community development and social programs.</p>
+                        </div>
+                        <div class="candidate-item">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Candidate" class="candidate-image">
+                            <div class="candidate-name">Michael Chen</div>
+                            <div class="candidate-position">Education Specialist</div>
+                            <p>Former school board member with expertise in educational policy.</p>
+                        </div>
+                        <div class="candidate-item">
+                            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Candidate" class="candidate-image">
+                            <div class="candidate-name">Emma Rodriguez</div>
+                            <div class="candidate-position">Environmental Planner</div>
+                            <p>Urban planning expert focused on sustainable development.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Admin Tab -->
+            <div class="tab-content" id="admin">
+                <h2><i class="fas fa-cog"></i> Administration Panel</h2>
+                <div class="card">
+                    <div class="form-group">
+                        <label for="adminPassword">Admin Password:</label>
+                        <input type="password" id="adminPassword" placeholder="Enter admin password">
+                    </div>
+                    <button class="btn" id="authAdminBtn">
+                        <i class="fas fa-sign-in-alt"></i> Authenticate
+                    </button>
+                    <div id="adminAuthLoading" class="loader hidden"></div>
+                </div>
+                <div class="card" id="adminControls" class="hidden">
+                    <h3><i class="fas fa-tasks"></i> Election Controls</h3>
+                    <div class="form-group">
+                        <label>Election Status:</label>
+                        <button class="btn btn-success" id="electionToggle">
+                            <i class="fas fa-toggle-on"></i> Close Election
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <h4><i class="fas fa-database"></i> Data Management</h4>
+                        <button class="btn btn-secondary" id="refreshDataBtn">
+                            <i class="fas fa-sync"></i> Refresh Data
+                        </button>
+                        <button class="btn btn-success" id="exportVotesBtn">
+                            <i class="fas fa-download"></i> Export Votes
+                        </button>
+                        <button class="btn btn-warning" id="backupToCloudBtn">
+                            <i class="fas fa-cloud-upload-alt"></i> Backup to Cloud
+                        </button>
+                    </div>
+                    <div class="status-info">
+                        <p><i class="fas fa-info-circle"></i> Admin actions are logged for security purposes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Phoenix Council Elections &copy; 2023 | Secure • Transparent • Reliable</p>
+            <p>Powered by the Phoenix Spirit of Renewal and Democracy</p>
+        </div>
+    </div>
+    <!-- Winner Info Popup Card -->
+    <div id="winnerInfoPopup">
+        <h4 id="popupTitle">Winner Information</h4>
+        <p><strong>Name:</strong> <span id="popupName"></span></p>
+        <p><strong>Position:</strong> <span id="popupPosition"></span></p>
+        <p><strong>Bio:</strong> <span id="popupBio"></span></p>
+        <p><strong>Weekly Activity:</strong> <span id="popupActivity"></span> hours</p>
+        <div class="winner-badge">🏆 Winner</div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
