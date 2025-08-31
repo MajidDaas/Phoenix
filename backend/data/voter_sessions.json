@@ -1,0 +1,44 @@
+{
+  "fad33a48-e2c3-4107-b1e6-e7ab2a84009a": {
+    "user_id": "DEMO_USER_FAC27E11",
+    "email": "demo@example.com",
+    "name": "Demo User",
+    "created_at": "2025-08-31 18:29:38.265110",
+    "has_voted": false
+  },
+  "7e73507f-1ed0-4f34-a056-4c4e36d237e5": {
+    "user_id": "DEMO_USER_810F2728",
+    "email": "demo@example.com",
+    "name": "Demo User",
+    "created_at": "2025-08-31 18:34:38.678790",
+    "has_voted": false
+  },
+  "1071cad8-f5d8-4153-9864-9fea5dbbd25c": {
+    "user_id": "107402049874203959354",
+    "email": "en.husam@gmail.com",
+    "name": "Hussam",
+    "created_at": "2025-08-31 18:36:09.214677",
+    "has_voted": true
+  },
+  "43988607-5476-4116-92fd-a602269125ee": {
+    "user_id": "DEMO_USER_F79D0144",
+    "email": "demo@example.com",
+    "name": "Demo User",
+    "created_at": "2025-08-31 18:57:14.832033",
+    "has_voted": false
+  },
+  "cf13487a-6e6b-4bae-b9d8-90ab0460c946": {
+    "user_id": "DEMO_USER_AC7DCA81",
+    "email": "demo@example.com",
+    "name": "Demo User",
+    "created_at": "2025-08-31 18:57:44.016494",
+    "has_voted": true
+  },
+  "bd3bf710-e79e-42ae-a90d-6b92b707efef": {
+    "user_id": "DEMO_USER_48153722",
+    "email": "demo@example.com",
+    "name": "Demo User",
+    "created_at": "2025-08-31 19:02:56.240061",
+    "has_voted": true
+  }
+}

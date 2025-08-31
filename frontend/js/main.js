@@ -32,7 +32,7 @@ let activeDetails = null;
 let electionOpen = true; // This will be updated by the backend
 let currentChart = null;
 const totalVoters = 20; // Number of eligible voters (for demo)
-let voterId = null; // Store the voter ID after verification
+let currentUser = null; // Store the authenticated user information
 
 // DOM Elements
 const candidateList = document.getElementById('candidateList');
@@ -194,8 +194,8 @@ function updateUI() {
 
 // Submit vote
 async function submitVote() {
-    if (!voterId) {
-         showMessage('You must verify your voter ID before submitting.', 'error');
+    if (!currentUser) {
+         showMessage('You must be authenticated before submitting.', 'error');
          return;
     }
     if (selectedCandidates.length !== maxSelections) {
@@ -211,7 +211,7 @@ async function submitVote() {
     document.getElementById('submitLoading').classList.remove('hidden');
 
     try {
-        const response = await ElectionAPI.submitVote(voterId, selectedCandidates, executiveCandidates);
+        const response = await ElectionAPI.submitVote(selectedCandidates, executiveCandidates);
         if (response.message && response.message.includes('successfully')) {
             showMessage(`Vote submitted successfully!
 Selected Candidates: ${selectedCandidates.length}
@@ -224,7 +224,7 @@ Executive Officers: ${executiveCandidates.length}`, 'success');
             document.getElementById('step1').classList.remove('hidden');
             document.getElementById('step2').classList.add('hidden');
             document.getElementById('step3').classList.add('hidden');
-            voterId = null; // Clear voter ID after submission
+            currentUser = null; // Clear user after submission
         } else {
             showMessage(response.message || 'Failed to submit vote', 'error');
         }
@@ -418,97 +418,138 @@ document.addEventListener('click', function(event) {
 // --- Voting Process Functions ---
 
 // Request voter ID
-async function requestVoterID() {
-    const email = document.getElementById('voterEmail').value.trim();
-    const phone = document.getElementById('voterPhone').value.trim();
-    if (!email || !phone) {
-        showMessage('Please enter both email and phone number', 'error');
-        return;
-    }
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showMessage('Please enter a valid email address', 'error');
-        return;
-    }
-    // Validate phone (last 4 digits)
-    if (phone.length !== 4 || !/^\d+$/.test(phone)) {
-        showMessage('Please enter exactly 4 digits for your phone number', 'error');
-        return;
-    }
+// Google OAuth2 Authentication
+async function signInWithGoogle() {
     // Show loading state
-    document.getElementById('requestVoterBtn').disabled = true;
-    document.getElementById('requestLoading').classList.remove('hidden');
+    document.getElementById('googleSigninBtn').disabled = true;
+    document.getElementById('authLoading').classList.remove('hidden');
 
     try {
-        const response = await ElectionAPI.requestVoterID(email, phone);
-        if (response.message && response.message.includes('successfully')) {
-            // Show step 2
-            document.getElementById('step1').classList.add('hidden');
-            document.getElementById('step2').classList.remove('hidden');
-            // For demo purposes, show the voter ID in the message
-            showMessage(`Demo: ${response.message} ID: ${response.voterId}`, 'info');
-        } else {
-            showMessage(response.message || 'Failed to request voter ID', 'error');
+        // Check if Google OAuth2 is properly configured
+        const response = await fetch('/auth/google/login');
+        if (response.status === 500) {
+            throw new Error('Google OAuth2 not configured');
         }
+        
+        // If we get here, Google OAuth2 is configured but may have issues
+        // For now, let's suggest using demo mode
+        showMessage('Google OAuth2 is experiencing issues. Please use Demo Mode for testing.', 'error');
+        
     } catch (err) {
-        console.error('Error requesting voter ID:', err);
-        showMessage('An error occurred. Please try again.', 'error');
+        console.error('Error initiating Google sign-in:', err);
+        if (err.message === 'Google OAuth2 not configured') {
+            showMessage('Google OAuth2 is not configured. Please use Demo Mode or contact the administrator.', 'error');
+        } else {
+            showMessage('Google OAuth2 is experiencing issues. Please use Demo Mode for testing.', 'error');
+        }
     } finally {
         // Hide loading state
-        document.getElementById('requestVoterBtn').disabled = false;
-        document.getElementById('requestLoading').classList.add('hidden');
+        document.getElementById('googleSigninBtn').disabled = false;
+        document.getElementById('authLoading').classList.add('hidden');
     }
 }
 
-// Skip ID request (demo functionality)
-function skipIDRequest() {
-    // Generate a demo voter ID
-    voterId = "DEMO_VID_" + Math.random().toString(36).substr(2, 9).toUpperCase();
-    document.getElementById('confirmedVoterId').textContent = voterId;
-    // Show step 3
-    document.getElementById('step1').classList.add('hidden');
-    document.getElementById('step2').classList.add('hidden');
-    document.getElementById('step3').classList.remove('hidden');
-    // Initialize candidates
-    initCandidates();
-    updateUI();
-    showMessage('Demo mode: Voter ID skipped. You may now vote.', 'success');
-}
-
-// Verify voter ID from email
-async function verifyEmailVoterId() {
-    const enteredVoterId = document.getElementById('emailVoterId').value.trim();
-    if (!enteredVoterId) {
-        showMessage('Please enter the voter ID you received via email', 'error');
-        return;
-    }
-    // Show loading state
-    document.getElementById('verifyVoterBtn').disabled = true;
-    document.getElementById('verifyLoading').classList.remove('hidden');
-
+// Demo authentication (skip Google OAuth2)
+async function demoAuth() {
     try {
-        const response = await ElectionAPI.verifyVoterID(enteredVoterId);
-        if (response.message && response.message.includes('successfully')) {
-            voterId = enteredVoterId; // Store the verified voter ID
-            document.getElementById('confirmedVoterId').textContent = enteredVoterId;
-            // Show step 3
+        // Show loading state
+        document.getElementById('demoAuthBtn').disabled = true;
+        document.getElementById('authLoading').classList.remove('hidden');
+        
+        // Call demo authentication endpoint
+        const response = await fetch('/api/auth/demo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            currentUser = data.user;
+            
+            // Show step 3 directly
+            document.getElementById('step1').classList.add('hidden');
             document.getElementById('step2').classList.add('hidden');
             document.getElementById('step3').classList.remove('hidden');
+            
+            // Update UI with demo user info
+            document.getElementById('confirmedUserName').textContent = currentUser.name;
+            
             // Initialize candidates
             initCandidates();
             updateUI();
-            showMessage('Email verified successfully! You may now vote.', 'success');
+            showMessage('Demo mode: Authentication successful. You may now vote.', 'success');
         } else {
-            showMessage(response.message || 'Invalid voter ID', 'error');
+            throw new Error('Demo authentication failed');
         }
     } catch (err) {
-        console.error('Error verifying voter ID:', err);
-        showMessage('An error occurred while verifying your ID. Please try again.', 'error');
+        console.error('Demo auth error:', err);
+        showMessage('Demo authentication failed. Please try again.', 'error');
     } finally {
         // Hide loading state
-        document.getElementById('verifyVoterBtn').disabled = false;
-        document.getElementById('verifyLoading').classList.add('hidden');
+        document.getElementById('demoAuthBtn').disabled = false;
+        document.getElementById('authLoading').classList.add('hidden');
+    }
+}
+
+// Check authentication status on page load
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.authenticated) {
+                currentUser = data.user;
+                // Show step 3 if authenticated
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('step3').classList.remove('hidden');
+                document.getElementById('confirmedUserName').textContent = currentUser.name;
+                initCandidates();
+                updateUI();
+                showMessage('Welcome back! You are authenticated.', 'success');
+            }
+        }
+    } catch (err) {
+        console.log('Not authenticated or error checking auth status');
+    }
+}
+
+// Proceed to voting after authentication
+function proceedToVoting() {
+    document.getElementById('step2').classList.add('hidden');
+    document.getElementById('step3').classList.remove('hidden');
+    document.getElementById('confirmedUserName').textContent = currentUser.name;
+    initCandidates();
+    updateUI();
+    showMessage('Ready to vote!', 'success');
+}
+
+// Logout function
+async function logout() {
+    try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        currentUser = null;
+        // Reset to step 1
+        document.getElementById('step1').classList.remove('hidden');
+        document.getElementById('step2').classList.add('hidden');
+        document.getElementById('step3').classList.add('hidden');
+        showMessage('Logged out successfully', 'success');
+    } catch (err) {
+        console.error('Error logging out:', err);
+        showMessage('Error logging out', 'error');
+    }
+}
+
+// Handle authentication callback from Google OAuth2
+function handleAuthCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authenticated = urlParams.get('authenticated');
+    
+    if (authenticated === 'true') {
+        // User was redirected back from Google OAuth2
+        checkAuthStatus();
     }
 }
 
@@ -653,6 +694,9 @@ const UIController = {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Phoenix Council Elections frontend initialized');
 
+    // Check for authentication callback
+    handleAuthCallback();
+
     // Initial UI setup
     // Fetch initial election status
     try {
@@ -681,10 +725,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         UIController.switchTab('admin');
     });
 
-    // Voting buttons
-    document.getElementById('requestVoterBtn').addEventListener('click', requestVoterID);
-    document.getElementById('skipIdRequestBtn').addEventListener('click', skipIDRequest);
-    document.getElementById('verifyVoterBtn').addEventListener('click', verifyEmailVoterId);
+    // Authentication buttons
+    document.getElementById('googleSigninBtn').addEventListener('click', signInWithGoogle);
+    document.getElementById('demoAuthBtn').addEventListener('click', demoAuth);
+    document.getElementById('proceedToVoteBtn').addEventListener('click', proceedToVoting);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
     document.getElementById('submitVoteBtn').addEventListener('click', submitVote);
 
     // Admin buttons

@@ -26,13 +26,13 @@ class ElectionAPI {
         return await response.json();
     }
 
-    static async submitVote(voterId, selectedCandidates, executiveCandidates) {
+    static async submitVote(selectedCandidates, executiveCandidates) {
         const response = await fetch(`${API_BASE_URL}/votes/submit`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ voterId, selectedCandidates, executiveCandidates })
+            body: JSON.stringify({ selectedCandidates, executiveCandidates })
         });
         return await response.json();
     }

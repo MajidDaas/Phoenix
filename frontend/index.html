@@ -44,51 +44,66 @@
             <div class="tab-content active" id="vote">
                 <h2><i class="fas fa-vote-yea"></i> Cast Your Vote</h2>
                 <div id="step1" class="card step-card">
-                    <h3><i class="fas fa-envelope"></i> Step 1: Request Your Voter ID</h3>
-                    <div class="form-group">
-                        <label for="voterEmail">Your Registered Email Address:</label>
-                        <input type="email" id="voterEmail" placeholder="Enter your registered email address">
+                    <h3><i class="fab fa-google"></i> Step 1: Sign in with Google</h3>
+                    <div class="auth-info">
+                        <p><strong>🔐 Secure Authentication Required</strong></p>
+                        <p>To vote in the Phoenix Council Elections, you must sign in with your Google account.</p>
+                        <p>This ensures:</p>
+                        <ul>
+                            <li>✅ Your identity is verified</li>
+                            <li>✅ Only registered voters can participate</li>
+                            <li>✅ One vote per person</li>
+                            <li>✅ Secure and anonymous voting</li>
+                        </ul>
                     </div>
-                    <div class="form-group">
-                        <label for="voterPhone">Your Phone Number (last 4 digits):</label>
-                        <input type="text" id="voterPhone" placeholder="Last 4 digits of your phone" maxlength="4">
+                    
+                    <div class="demo-auth">
+                        <div class="demo-highlight">
+                            <p><strong>🎯 RECOMMENDED FOR TESTING:</strong></p>
+                            <p>Use Demo Mode to test the voting system immediately without any authentication setup.</p>
+                            <button class="btn demo-btn-primary" id="demoAuthBtn">
+                                <i class="fas fa-play"></i> Start Demo Mode
+                            </button>
+                        </div>
+                        
+                        <div class="google-auth-section">
+                            <p><strong>🔧 Google Authentication (Advanced):</strong></p>
+                            <button class="btn google-signin-btn" id="googleSigninBtn">
+                                <i class="fab fa-google"></i> Sign in with Google
+                            </button>
+                            <p class="demo-note"><small>Note: Google OAuth2 requires proper setup in Google Cloud Console.</small></p>
+                        </div>
                     </div>
-                    <button class="btn" id="requestVoterBtn">
-                        <i class="fas fa-paper-plane"></i> Request Voter ID via Email
-                    </button>
-                    <div class="skip-id-request">
-                        <button class="btn" id="skipIdRequestBtn">
-                            <i class="fas fa-forward"></i> Skip ID Request (Demo)
-                        </button>
-                    </div>
-                    <div id="requestLoading" class="loader hidden"></div>
+                    <div id="authLoading" class="loader hidden"></div>
                 </div>
                 <div id="step2" class="card step-card hidden">
-                    <h3><i class="fas fa-envelope-open-text"></i> Step 2: Check Your Email</h3>
-                    <div class="status-info">
-                        <p><strong>📧 Voter ID Sent to Your Email</strong></p>
-                        <p>Your unique voter ID has been sent to your registered email address.</p>
-                        <p>Please check your email (including spam folder) and copy the voter ID.</p>
-                        <p><strong>Security Note:</strong> Only the person with access to your email can retrieve the ID.</p>
+                    <h3><i class="fas fa-user-check"></i> Step 2: Verify Your Identity</h3>
+                    <div class="auth-success">
+                        <p><strong>✅ Successfully Authenticated!</strong></p>
+                        <div class="user-info">
+                            <p><strong>Welcome, <span id="userName"></span>!</strong></p>
+                            <p>Email: <span id="userEmail"></span></p>
+                        </div>
+                        <p>Your identity has been verified through Google. You can now proceed to vote.</p>
+                        <p><strong>Security Note:</strong> Your vote will be anonymous and secure.</p>
                     </div>
-                    <div class="form-group">
-                        <label for="emailVoterId">Enter Voter ID from Email:</label>
-                        <input type="text" id="emailVoterId" placeholder="Paste your voter ID from the email">
-                    </div>
-                    <button class="btn" id="verifyVoterBtn">
-                        <i class="fas fa-check-circle"></i> Verify Voter ID & Continue
+                    <button class="btn" id="proceedToVoteBtn">
+                        <i class="fas fa-arrow-right"></i> Proceed to Voting
                     </button>
-                    <div id="verifyLoading" class="loader hidden"></div>
+                    <button class="btn logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
+                    <div id="proceedLoading" class="loader hidden"></div>
                 </div>
                 <div id="step3" class="hidden">
                     <div class="status-success">
-                        <p><strong>✅ Email Verified Successfully!</strong></p>
-                        <p>Your voter ID: <strong id="confirmedVoterId"></strong></p>
+                        <p><strong>✅ Ready to Vote!</strong></p>
+                        <p>You are authenticated as: <strong id="confirmedUserName"></strong></p>
                     </div>
                     <div class="instructions">
                         <h4><i class="fas fa-info-circle"></i> Voting Instructions</h4>
                         <ol>
-                            <li>Your identity has been verified through email</li>
+                            <li>Your identity has been verified through Google</li>
                             <li>Click on candidates to select them for council (15 total)</li>
                             <li>Click again on selected candidates to mark as Executive Officers (7 total)</li>
                             <li>Click a third time to deselect a candidate</li>
@@ -152,9 +167,8 @@
                     <div class="form-group">
                         <h4><i class="fas fa-list-ol"></i> Voting Process</h4>
                         <ol>
-                            <li>Request your voter ID using your registered email and phone number</li>
-                            <li>Check your email for the voter ID</li>
-                            <li>Verify your voter ID in the system</li>
+                            <li>Sign in with your Google account for secure authentication</li>
+                            <li>Verify your identity through Google's secure system</li>
                             <li>Click on candidate cards to select them for council</li>
                             <li>Click again on selected candidates to designate as Executive Officers</li>
                             <li>Click a third time to deselect a candidate</li>

@@ -1,10 +1,11 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session, redirect, url_for
 from flask_cors import CORS
 import os
 import uuid
-from .config import config
-from .utils.data_handler import get_candidates, get_votes, save_votes, get_election_status, save_election_status
-from .models import Vote, VotesData, ElectionStatus
+from config import config
+from utils.data_handler import get_candidates, get_votes, save_votes, get_election_status, save_election_status
+from models import Vote, VotesData, ElectionStatus
+from utils.auth import GoogleAuth, VoterSession
 
 def create_app(config_name='default'):
     app = Flask(__name__, static_folder='../frontend')
@@ -12,7 +13,15 @@ def create_app(config_name='default'):
     config[config_name].init_app(app)
     
     # Enable CORS for development
-    CORS(app)
+    CORS(app, origins=['http://localhost:5001', 'http://127.0.0.1:5001'], supports_credentials=True)
+    
+    # Initialize Google OAuth2 and voter session management
+    google_auth = GoogleAuth(
+        client_id=app.config['GOOGLE_CLIENT_ID'],
+        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+        redirect_uri=app.config['GOOGLE_REDIRECT_URI']
+    )
+    voter_session = VoterSession()
 
     # In a real application, use proper authentication (e.g., JWT, sessions)
     # For demo, we'll keep it simple
@@ -96,18 +105,36 @@ def create_app(config_name='default'):
 
     # @desc    Submit a vote
     # @route   POST /api/votes/submit
-    # @access  Public
+    # @access  Authenticated
     @app.route('/api/votes/submit', methods=['POST'])
     def submit_vote():
+        # Check authentication
+        session_id = session.get('voter_session_id')
+        voter_info = None
+        
+        if session_id:
+            voter_info = voter_session.get_session(session_id)
+            if not voter_info:
+                return jsonify({'message': 'Invalid session'}), 401
+            
+            if voter_info['has_voted']:
+                return jsonify({'message': 'You have already voted'}), 400
+        else:
+            # Demo mode - create a demo user
+            voter_info = {
+                'user_id': f"DEMO_USER_{uuid.uuid4().hex[:8].upper()}",
+                'name': 'Demo User',
+                'email': 'demo@example.com'
+            }
+
         data = request.get_json()
-        voter_id = data.get('voterId')
         selected_candidates = data.get('selectedCandidates')
         executive_candidates = data.get('executiveCandidates')
         MAX_SELECTIONS = 15
         MAX_EXECUTIVES = 7
 
-        if not voter_id or not selected_candidates or not executive_candidates:
-            return jsonify({'message': 'Voter ID, selected candidates, and executive candidates are required'}), 400
+        if not selected_candidates or not executive_candidates:
+            return jsonify({'message': 'Selected candidates and executive candidates are required'}), 400
 
         if len(selected_candidates) != MAX_SELECTIONS:
             return jsonify({'message': f'You must select exactly {MAX_SELECTIONS} candidates'}), 400
@@ -127,31 +154,25 @@ def create_app(config_name='default'):
         if not election_status.is_open:
             return jsonify({'message': 'Election is currently closed'}), 400
 
-        # Verify voter ID again
-        if voter_id not in DEMO_VOTER_IDS:
-            return jsonify({'message': 'Invalid voter ID'}), 400
-
-        votes_data = get_votes()
-        if voter_id in votes_data.voter_ids:
-            return jsonify({'message': 'This voter ID has already been used'}), 400
-
-        # Record the vote
+        # Record the vote using Google user ID
         new_vote = Vote(
             id=str(uuid.uuid4()),
-            voter_id=voter_id,
+            voter_id=voter_info['user_id'],
             selected_candidates=selected_candidates,
             executive_candidates=executive_candidates,
             timestamp=__import__('datetime').datetime.utcnow().isoformat() + 'Z'
         )
 
+        votes_data = get_votes()
         votes_data.votes.append(new_vote)
-        votes_data.voter_ids.append(voter_id)
+        votes_data.voter_ids.append(voter_info['user_id'])
 
         if not save_votes(votes_data):
             return jsonify({'message': 'Failed to save vote'}), 500
 
-        # Remove used voter ID from demo set
-        DEMO_VOTER_IDS.discard(voter_id)
+        # Mark voter as having voted (only if authenticated)
+        if session_id:
+            voter_session.mark_voted(session_id)
 
         return jsonify({'message': 'Vote submitted successfully'}), 200
 
@@ -262,6 +283,142 @@ def create_app(config_name='default'):
         except Exception as err:
             app.logger.error(err)
             return jsonify({'message': 'Server error'}), 500
+
+    # --- Google OAuth2 Routes ---
+
+    # @desc    Initiate Google OAuth2 login
+    # @route   GET /auth/google/login
+    # @access  Public
+    @app.route('/auth/google/login')
+    def google_login():
+        try:
+            # Check if Google OAuth2 is properly configured
+            if (app.config['GOOGLE_CLIENT_ID'] == 'your-google-client-id' or 
+                app.config['GOOGLE_CLIENT_SECRET'] == 'your-google-client-secret' or
+                'your-google-client-id' in app.config['GOOGLE_CLIENT_ID'] or
+                'your-google-client-secret' in app.config['GOOGLE_CLIENT_SECRET']):
+                return jsonify({
+                    'message': 'Google OAuth2 is not configured. Please use Demo Mode or contact the administrator.',
+                    'error': 'oauth_not_configured'
+                }), 500
+            
+            # For demo purposes, if Google OAuth2 fails, suggest using demo mode
+            # This will be caught by the frontend and show a helpful message
+            
+            authorization_url, state = google_auth.get_authorization_url()
+            session['oauth_state'] = state
+            return redirect(authorization_url)
+        except Exception as e:
+            app.logger.error(f"Google login error: {e}")
+            return jsonify({'message': 'Authentication error'}), 500
+
+    # @desc    Google OAuth2 callback
+    # @route   GET /auth/google/callback
+    # @access  Public
+    @app.route('/auth/google/callback')
+    def google_callback():
+        try:
+            code = request.args.get('code')
+            state = request.args.get('state')
+            
+            if not code:
+                return jsonify({'message': 'Authorization code not received'}), 400
+            
+            # Exchange code for tokens
+            tokens = google_auth.exchange_code_for_tokens(code)
+            if not tokens:
+                return jsonify({'message': 'Failed to exchange authorization code'}), 400
+            
+            # Verify ID token
+            user_info = google_auth.verify_id_token(tokens['id_token'])
+            if not user_info:
+                return jsonify({'message': 'Failed to verify user identity'}), 400
+            
+            # Check if user has already voted
+            if voter_session.has_voted(user_info['user_id']):
+                return jsonify({'message': 'You have already voted in this election'}), 400
+            
+            # Create voter session
+            session_id = voter_session.create_session(
+                user_info['user_id'],
+                user_info['email'],
+                user_info['name']
+            )
+            
+            # Store session ID in Flask session
+            session['voter_session_id'] = session_id
+            session['user_info'] = user_info
+            
+            # Redirect to voting page
+            return redirect('/?authenticated=true')
+            
+        except Exception as e:
+            app.logger.error(f"Google callback error: {e}")
+            return jsonify({'message': 'Authentication error'}), 500
+
+    # @desc    Get current voter session
+    # @route   GET /api/auth/session
+    # @access  Authenticated
+    @app.route('/api/auth/session', methods=['GET'])
+    def get_voter_session():
+        session_id = session.get('voter_session_id')
+        if not session_id:
+            return jsonify({'message': 'Not authenticated'}), 401
+        
+        voter_info = voter_session.get_session(session_id)
+        if not voter_info:
+            return jsonify({'message': 'Invalid session'}), 401
+        
+        return jsonify({
+            'authenticated': True,
+            'user': {
+                'name': voter_info['name'],
+                'email': voter_info['email']
+            },
+            'hasVoted': voter_info['has_voted']
+        }), 200
+
+    # @desc    Logout voter
+    # @route   POST /api/auth/logout
+    # @access  Authenticated
+    @app.route('/api/auth/logout', methods=['POST'])
+    def logout():
+        session.pop('voter_session_id', None)
+        session.pop('user_info', None)
+        return jsonify({'message': 'Logged out successfully'}), 200
+
+    # @desc    Demo mode authentication
+    # @route   POST /api/auth/demo
+    # @access  Public
+    @app.route('/api/auth/demo', methods=['POST'])
+    def demo_auth():
+        try:
+            # Create a demo session
+            demo_user_id = f"DEMO_USER_{uuid.uuid4().hex[:8].upper()}"
+            session_id = voter_session.create_session(
+                demo_user_id,
+                'demo@example.com',
+                'Demo User'
+            )
+            
+            # Store session ID in Flask session
+            session['voter_session_id'] = session_id
+            session['user_info'] = {
+                'user_id': demo_user_id,
+                'email': 'demo@example.com',
+                'name': 'Demo User'
+            }
+            
+            return jsonify({
+                'message': 'Demo mode activated successfully',
+                'user': {
+                    'name': 'Demo User',
+                    'email': 'demo@example.com'
+                }
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Demo auth error: {e}")
+            return jsonify({'message': 'Demo authentication failed'}), 500
 
     return app
 

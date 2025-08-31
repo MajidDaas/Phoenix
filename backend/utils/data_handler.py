@@ -1,8 +1,11 @@
 import os
 import json
 from typing import List, Dict, Any
-from ..models import Candidate, Vote, VotesData, ElectionStatus
-from ..config import Config
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from models import Candidate, Vote, VotesData, ElectionStatus
+from config import Config
 
 DATA_FOLDER = Config.DATA_FOLDER
 
