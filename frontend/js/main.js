@@ -133,29 +133,43 @@ function selectCandidate(id) {
     if (!candidate) return;
     const isSelected = selectedCandidates.includes(id);
     const isExecutive = executiveCandidates.includes(id);
-    // Third click - remove completely
-    if (isSelected && isExecutive) {
-        selectedCandidates = selectedCandidates.filter(cId => cId !== id);
-        executiveCandidates = executiveCandidates.filter(cId => cId !== id);
-    }
-    // Second click - mark as executive
-    else if (isSelected) {
-        if (executiveCandidates.length < maxExecutives) {
-            executiveCandidates.push(id);
+
+    
+    // --- CORRECTED LOGIC ---
+    if (isSelected) {
+        // Clicked on a candidate that is already selected
+        if (isExecutive) {
+            // If it's an Executive Officer, remove it from the EO list (FIX #1 Part A)
+            executiveCandidates = executiveCandidates.filter(cId => cId !== id);
+            console.log(`Removed candidate ID ${id} from Executive Officers.`);
+            // Optional: Decide if removing EO status also deselects them completely.
+            // If so, uncomment the next line:
+            // selectedCandidates = selectedCandidates.filter(cId => cId !== id);
         } else {
-            showMessage('You can only select 7 executive officers', 'error');
-            return;
+            // It's selected but NOT an EO.
+            // Check if we can promote it to EO
+            if (executiveCandidates.length < maxExecutives) {
+                executiveCandidates.push(id);
+                console.log(`Promoted candidate ID ${id} to Executive Officer.`);
+            } else {
+                // EO list is full. Interpret click as deselection (3rd click in cycle).
+                selectedCandidates = selectedCandidates.filter(cId => cId !== id);
+                console.log(`Deselected candidate ID ${id} (EO list full).`);
+            }
         }
-    }
-    // First click - select for council
-    else {
+    } else {
+        // Clicked on a candidate that is NOT selected
         if (selectedCandidates.length < maxSelections) {
             selectedCandidates.push(id);
+            console.log(`Selected candidate ID ${id}.`);
         } else {
-            showMessage('You can only select 15 council members', 'error');
+            showMessage(`You can only select ${maxSelections} council members`, 'error');
             return;
         }
     }
+    // --- END CORRECTED LOGIC ---
+
+
     updateUI();
 }
 
