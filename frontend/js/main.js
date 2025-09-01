@@ -122,56 +122,67 @@ function hideCandidateDetails(id) {
     }
 }
 
-// Select candidate for council
+// Select candidate for council (UPDATED LOGIC: Clicking EO removes selection entirely)
 function selectCandidate(id) {
     // Check if election is open
     if (!electionOpen) {
         showMessage('Voting is currently closed', 'error');
         return;
     }
+
+    // Ensure candidates data is available
+    if (typeof candidates === 'undefined' || !Array.isArray(candidates)) {
+        showMessage('Candidate data is not loaded correctly.', 'error');
+        return;
+    }
+
     const candidate = candidates.find(c => c.id === id);
-    if (!candidate) return;
+    if (!candidate) {
+        console.warn(`Candidate with ID ${id} not found.`);
+        return;
+    }
     const isSelected = selectedCandidates.includes(id);
     const isExecutive = executiveCandidates.includes(id);
 
-    
-    // --- CORRECTED LOGIC ---
+    // --- UPDATED LOGIC ---
     if (isSelected) {
         // Clicked on a candidate that is already selected
         if (isExecutive) {
-            // If it's an Executive Officer, remove it from the EO list (FIX #1 Part A)
+            // --- CHANGE: Clicking an EO removes it completely ---
+            // 1. Remove from Executive Officers list (removes orange badge)
             executiveCandidates = executiveCandidates.filter(cId => cId !== id);
-            console.log(`Removed candidate ID ${id} from Executive Officers.`);
-            // Optional: Decide if removing EO status also deselects them completely.
-            // If so, uncomment the next line:
-            // selectedCandidates = selectedCandidates.filter(cId => cId !== id);
+            console.log(`Removed candidate ID ${id} from Executive Officers (orange badge removed).`);
+            // 2. Remove from Selected list (removes green border)
+            selectedCandidates = selectedCandidates.filter(cId => cId !== id);
+            console.log(`Deselected candidate ID ${id} (green border removed).`);
+            // --- END CHANGE ---
         } else {
-            // It's selected but NOT an EO.
-            // Check if we can promote it to EO
+            // It's selected but NOT an Executive Officer.
+            // Check if we can promote it to Executive Officer
             if (executiveCandidates.length < maxExecutives) {
                 executiveCandidates.push(id);
-                console.log(`Promoted candidate ID ${id} to Executive Officer.`);
+                console.log(`Promoted candidate ID ${id} to Executive Officer (added orange badge).`);
             } else {
-                // EO list is full. Interpret click as deselection (3rd click in cycle).
+                // EO list is full. Interpret click as deselection.
                 selectedCandidates = selectedCandidates.filter(cId => cId !== id);
-                console.log(`Deselected candidate ID ${id} (EO list full).`);
+                console.log(`Deselected candidate ID ${id} (EO list full, green border removed).`);
             }
         }
     } else {
         // Clicked on a candidate that is NOT selected
         if (selectedCandidates.length < maxSelections) {
             selectedCandidates.push(id);
-            console.log(`Selected candidate ID ${id}.`);
+            console.log(`Selected candidate ID ${id} (added green border).`);
         } else {
             showMessage(`You can only select ${maxSelections} council members`, 'error');
             return;
         }
     }
-    // --- END CORRECTED LOGIC ---
-
+    // --- END UPDATED LOGIC ---
 
     updateUI();
 }
+// --- END FIXED VOTING LOGIC ---
 
 // Update UI based on selections
 function updateUI() {
