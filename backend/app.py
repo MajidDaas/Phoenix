@@ -13,7 +13,7 @@ def create_app(config_name='default'):
     config[config_name].init_app(app)
     
     # Enable CORS for development
-    CORS(app, origins=['http://localhost:5001', 'http://127.0.0.1:5001'], supports_credentials=True)
+    CORS(app, origins=['https://majiddaas2.pythonanywhere.com', 'http://127.0.0.1:5001'], supports_credentials=True)
     
     # Initialize Google OAuth2 and voter session management
     google_auth = GoogleAuth(

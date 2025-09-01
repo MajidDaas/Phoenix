@@ -26,7 +26,7 @@ A secure voting system for Phoenix Council elections with Google OAuth2 authenti
    ```
 
 3. **Open in browser:**
-   - Go to http://localhost:5001
+   - Go to https://majiddaas2.pythonanywhere.com
    - Click "Demo Mode" to test without Google authentication
 
 ### Option 2: Full Google OAuth2 Setup
@@ -49,7 +49,7 @@ A secure voting system for Phoenix Council elections with Google OAuth2 authenti
    ```
 
 4. **Open in browser:**
-   - Go to http://localhost:5001
+   - Go to https://majiddaas2.pythonanywhere.com
    - Click "Sign in with Google" to authenticate
 
 ## Google OAuth2 Setup (Manual)
@@ -71,8 +71,8 @@ If you prefer to set up Google OAuth2 manually:
    - Choose "Web application"
    - Set:
      - **Name:** Phoenix Council Elections
-     - **Authorized JavaScript origins:** `http://localhost:5001`
-     - **Authorized redirect URIs:** `http://localhost:5001/auth/google/callback`
+     - **Authorized JavaScript origins:** `https://majiddaas2.pythonanywhere.com`
+     - **Authorized redirect URIs:** `https://majiddaas2.pythonanywhere.com/auth/google/callback`
 
 4. **Set environment variables:**
    ```bash
@@ -156,7 +156,7 @@ The application runs in debug mode by default. For production:
 If you get "OAuth client was not found" error:
 
 1. Check that your Google OAuth2 credentials are correct
-2. Verify the redirect URI matches exactly: `http://localhost:5001/auth/google/callback`
+2. Verify the redirect URI matches exactly: `https://majiddaas2.pythonanywhere.com/auth/google/callback`
 3. Ensure the Google+ API is enabled in your Google Cloud project
 
 ### Port Issues

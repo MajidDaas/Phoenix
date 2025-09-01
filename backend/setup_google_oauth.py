@@ -41,8 +41,8 @@ def main():
     print("   - Choose 'Web application'")
     print("   - Set the following:")
     print("     • Name: Phoenix Council Elections")
-    print("     • Authorized JavaScript origins: http://localhost:5001")
-    print("     • Authorized redirect URIs: http://localhost:5001/auth/google/callback")
+    print("     • Authorized JavaScript origins: https://majiddaas2.pythonanywhere.com")
+    print("     • Authorized redirect URIs: https://majiddaas2.pythonanywhere.com/auth/google/callback")
     print()
     
     print("5️⃣  Get your credentials:")
@@ -65,7 +65,7 @@ def main():
         env_content = f"""# Google OAuth2 Configuration
 GOOGLE_CLIENT_ID={client_id}
 GOOGLE_CLIENT_SECRET={client_secret}
-GOOGLE_REDIRECT_URI=http://localhost:5001/auth/google/callback
+GOOGLE_REDIRECT_URI=https://majiddaas2.pythonanywhere.com/auth/google/callback
 
 # Other configuration
 SECRET_KEY=dev-secret-key-change-in-production
