@@ -39,6 +39,9 @@
                 <button class="tab" data-tab="info">
                     <i class="fas fa-info-circle"></i> Information
                 </button>
+                <button class="tab" data-tab="admin" style="display: none;">
+                    <i class="fas fa-cog"></i> Admin
+                </button>
             </div>
             <!-- Voting Tab -->
             <div class="tab-content active" id="vote">
@@ -217,7 +220,7 @@
                     </button>
                     <div id="adminAuthLoading" class="loader hidden"></div>
                 </div>
-                <div class="card" id="adminControls" class="hidden">
+                <div class="card hidden" id="adminControls"">
                     <h3><i class="fas fa-tasks"></i> Election Controls</h3>
                     <div class="form-group">
                         <label>Election Status:</label>
