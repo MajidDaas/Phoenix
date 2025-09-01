@@ -1,4 +1,4 @@
-// main.js - Main application logic1
+// main.js - Main application logic
 
 // Candidate data (for frontend display, results will come from backend)
 // In a fully integrated app, this might also come from an API endpoint
