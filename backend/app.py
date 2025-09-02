@@ -91,9 +91,9 @@ def create_app(config_name='default'):
             return jsonify({"message": "An internal server error occurred while fetching candidates."}), 500
 
     # @desc    Export votes to CSV
-    # @route   GET /api/export-csv
+    # @route   GET /api/admin/export-csv
     # @access  Admin (in real app, protected)
-    @app.route('/api/export-csv', methods=['GET'])
+    @app.route('/api/admin/export-csv', methods=['GET'])
     def export_votes_to_csv():
         try:
             # --- Fetch data ---
