@@ -2,26 +2,6 @@
 
 // Candidate data (for frontend display, results will come from backend)
 // In a fully integrated app, this might also come from an API endpoint
-const candidates = [
-    { id: 1, name: "Sarah Johnson", position: "Community Advocate", photo: "https://randomuser.me/api/portraits/women/44.jpg", activity: 15, bio: "20 years of experience in community development and social programs. Focuses on inclusive growth and social equity.", isWinner: true },
-    { id: 2, name: "Michael Chen", position: "Education Specialist", photo: "https://randomuser.me/api/portraits/men/32.jpg", activity: 12, bio: "Former school board member with expertise in educational policy. Advocates for STEM education and digital literacy.", isWinner: true },
-    { id: 3, name: "Emma Rodriguez", position: "Environmental Planner", photo: "https://randomuser.me/api/portraits/women/68.jpg", activity: 8, bio: "Urban planning expert focused on sustainable development. Leads initiatives for green infrastructure and renewable energy.", isWinner: true },
-    { id: 4, name: "David Kim", position: "Business Development", photo: "https://randomuser.me/api/portraits/men/22.jpg", activity: 14, bio: "Entrepreneur with 15 years in business development. Promotes economic growth through small business support.", isWinner: true },
-    { id: 5, name: "Lisa Anderson", position: "Healthcare Advocate", photo: "https://randomuser.me/api/portraits/women/12.jpg", activity: 6, bio: "Registered nurse with 18 years of experience. Focuses on public health initiatives and mental wellness programs.", isWinner: true },
-    { id: 6, name: "Robert Martinez", position: "Infrastructure Specialist", photo: "https://randomuser.me/api/portraits/men/65.jpg", activity: 11, bio: "Civil engineer with expertise in urban infrastructure. Leads projects for smart city development and transportation.", isWinner: true },
-    { id: 7, name: "Jennifer Lee", position: "Arts & Culture", photo: "https://randomuser.me/api/portraits/women/33.jpg", activity: 9, bio: "Artist and cultural organizer. Promotes local arts programs and cultural diversity initiatives.", isWinner: true },
-    { id: 8, name: "Thomas Wilson", position: "Public Safety", photo: "https://randomuser.me/api/portraits/men/41.jpg", activity: 13, bio: "Former police chief with 25 years of experience. Focuses on community policing and crime prevention programs.", isWinner: false },
-    { id: 9, name: "Amanda Taylor", position: "Youth Programs", photo: "https://randomuser.me/api/portraits/women/76.jpg", activity: 7, bio: "Educator with focus on youth development. Leads programs for after-school activities and mentorship.", isWinner: false },
-    { id: 10, name: "Christopher Brown", position: "Technology Innovation", photo: "https://randomuser.me/api/portraits/men/82.jpg", activity: 16, bio: "Tech entrepreneur and innovation specialist. Promotes digital transformation and tech education.", isWinner: false },
-    { id: 11, name: "Michelle Garcia", position: "Housing Advocate", photo: "https://randomuser.me/api/portraits/women/54.jpg", activity: 5, bio: "Housing policy expert. Focuses on affordable housing initiatives and tenant rights.", isWinner: false },
-    { id: 12, name: "Daniel Rodriguez", position: "Transportation", photo: "https://randomuser.me/api/portraits/men/19.jpg", activity: 10, bio: "Urban planner specializing in transportation. Advocates for public transit and walkable communities.", isWinner: false },
-    { id: 13, name: "Stephanie Clark", position: "Senior Services", photo: "https://randomuser.me/api/portraits/women/28.jpg", activity: 4, bio: "Social worker with focus on senior care. Leads programs for aging in place and senior wellness.", isWinner: false },
-    { id: 14, name: "Matthew Hall", position: "Economic Development", photo: "https://randomuser.me/api/portraits/men/53.jpg", activity: 12, bio: "Economist with focus on regional development. Promotes job creation and workforce development.", isWinner: false },
-    { id: 15, name: "Rebecca Lewis", position: "Environmental Justice", photo: "https://randomuser.me/api/portraits/women/67.jpg", activity: 8, bio: "Environmental scientist. Focuses on climate action and environmental justice for underserved communities.", isWinner: false },
-    { id: 16, name: "Kevin Walker", position: "Public Libraries", photo: "https://randomuser.me/api/portraits/men/74.jpg", activity: 9, bio: "Librarian and educator. Advocates for digital literacy and community learning centers.", isWinner: false },
-    { id: 17, name: "Nicole Allen", position: "Disability Rights", photo: "https://randomuser.me/api/portraits/women/39.jpg", activity: 6, bio: "Disability rights advocate. Focuses on accessibility and inclusive community design.", isWinner: false },
-    { id: 18, name: "Brandon Young", position: "Sports & Recreation", photo: "https://randomuser.me/api/portraits/men/91.jpg", activity: 11, bio: "Former athlete and coach. Promotes youth sports and community recreation programs.", isWinner: false }
-];
 
 // State management
 let selectedCandidates = [];
@@ -33,6 +13,7 @@ let electionOpen = true; // This will be updated by the backend
 let currentChart = null;
 const totalVoters = 20; // Number of eligible voters (for demo)
 let currentUser = null; // Store the authenticated user information
+let candidates = []; // Moved from const to let, initialized as empty
 
 // DOM Elements
 const candidateList = document.getElementById('candidateList');
@@ -718,6 +699,7 @@ const UIController = {
 
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Phoenix Council Elections frontend initialized');
+    loadCandidates(); // Initiates the fetch of candidate data
 
     // Check for authentication callback
     handleAuthCallback();
@@ -769,10 +751,79 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateUI();
     // renderResults(); // Don't render results here, wait for results tab
 
+// ... (code inside DOMContentLoaded) ...
     // Add click outside listener for candidate details
     document.addEventListener('click', (e) => {
         if (activeDetails && !e.target.closest('.candidate-item')) {
             hideCandidateDetails(activeDetails);
         }
     });
-});
+    // --- END OF DOMContentLoaded CODE ---
+}); // <-- This is the closing bracket of DOMContentLoaded
+
+// --- MOVE THE loadCandidates FUNCTION HERE ---
+// --- NEW FUNCTION: Fetch Candidates from Backend ---
+/**
+ * Fetches the list of candidates from the backend API.
+ * Initializes the candidate display UI upon successful fetch.
+ */
+async function loadCandidates() {
+    const candidateListElement = document.getElementById('candidateList');
+    if (!candidateListElement) {
+        console.error("Candidate list container (#candidateList) not found in the DOM.");
+        return;
+    }
+
+    // Show a loading indicator while fetching data
+    candidateListElement.innerHTML = '<div class="loader"></div>'; // Ensure .loader CSS exists
+
+    try {
+        // --- FETCH DATA FROM BACKEND ---
+        const response = await fetch('/api/candidates');
+
+        if (!response.ok) {
+            throw new Error(`Backend returned error ${response.status}: ${response.statusText}`);
+        }
+
+        const candidatesData = await response.json();
+
+        if (!Array.isArray(candidatesData)) {
+             throw new Error("Received candidate data is not in the expected array format.");
+        }
+
+        // --- SUCCESSFULLY LOADED ---
+        candidates = candidatesData; // Assign fetched data to the global variable
+        console.log("Candidates successfully loaded from backend:", candidates);
+
+        // --- INITIALIZE UI DEPENDENT ON CANDIDATES ---
+        // These functions now use the populated `candidates` array
+        initCandidates();
+        updateUI(); // Update counters, button states based on (initially empty) selections
+
+    } catch (error) {
+        // --- HANDLE ERRORS ---
+        console.error("Error loading candidates from backend:", error);
+        // Display a user-friendly error message in the candidate list area
+        candidateListElement.innerHTML = `
+            <div class="status-error">
+                <p><i class="fas fa-exclamation-circle"></i> Failed to load candidate data.</p>
+                <p>Details: ${error.message}</p>
+                <p>Please try refreshing the page.</p>
+            </div>
+        `;
+        // Optionally disable voting if candidates can't be loaded
+        // const submitVoteBtn = document.getElementById('submitVoteBtn');
+        // if (submitVoteBtn) {
+        //     submitVoteBtn.disabled = true;
+        //     submitVoteBtn.title = "Cannot submit vote: Candidate data unavailable.";
+        // }
+
+    } finally {
+        // The loading indicator is replaced by either candidates or an error message,
+        // so no specific cleanup is needed here for it in this structure.
+    }
+}
+// --- END NEW FUNCTION ---
+
+// --- Event Listeners ---
+// (Rest of your code, like other functions, UIController, etc.)
