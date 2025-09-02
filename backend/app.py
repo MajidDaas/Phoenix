@@ -93,7 +93,7 @@ def create_app(config_name='default'):
     # @desc    Export votes to CSV
     # @route   GET /api/export-csv
     # @access  Admin (in real app, protected)
-    @app.route('/api/admin/export-csv', methods=['GET'])
+    @app.route('/api/export-csv', methods=['GET'])
     def export_votes_to_csv():
         try:
             # --- Fetch data ---
