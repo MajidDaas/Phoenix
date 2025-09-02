@@ -1,4 +1,5 @@
-[
+{
+"candidates": [
   {
     "id": 1,
     "name": "Sarah Johnson",
@@ -162,3 +163,4 @@
     "isWinner": false
   }
 ]
+}
