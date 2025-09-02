@@ -142,5 +142,13 @@
     "photo": "https://randomuser.me/api/portraits/men/91.jpg",
     "activity": 11,
     "bio": "Former athlete and coach. Promotes youth sports and community recreation programs."
+  },
+  {
+    "id": 19,
+    "name": "Saryt Johnson",
+    "position": "Community Advocate",
+    "photo": "https://randomuser.me/api/portraits/women/44.jpg",
+    "activity": 30,
+    "bio": "20 years of experience in community development and social programs. Focuses on inclusive growth and social equity."
   }
 ]
