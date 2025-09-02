@@ -800,19 +800,27 @@ async function exportVotesToCSV() {
 
                 showMessage(`Votes exported successfully as ${filename}`, 'success');
             } else {
-                 // Response was OK, but not CSV. Might be an unexpected JSON error from backend.
-                 // Try parsing as JSON
-                 let errorMessage = 'Unexpected response format from server during CSV export.';
-                 try {
-                     const errorData = await response.json();
-                     errorMessage = errorData.message || errorMessage;
-                 } catch (parseErr) {
-                     console.warn('Could not parse unexpected response from CSV export:', parseErr);
-                     // If parsing fails, log the response text for debugging
-                     const responseText = await response.text().catch(() => '');
-                     console.warn('Response text was:', responseText.substring(0, 200) + '...'); // Log first 200 chars
-                 }
-                 throw new Error(errorMessage);
+                // Response was OK, but not CSV. Might be an unexpected JSON error from backend.
+                // Read the response body text ONCE.
+                let responseText = '';
+                try {
+                    responseText = await response.text(); // Read the body as text
+                } catch (readErr) {
+                    console.error('Error reading response body text:', readErr);
+                    throw new Error('Failed to read response body from server.');
+                }
+
+                // Try parsing the text as JSON
+                let errorMessage = 'Unexpected response format from server during CSV export.';
+                try {
+                    const errorData = JSON.parse(responseText); // Parse the text as JSON
+                    errorMessage = errorData.message || errorMessage;
+                } catch (parseErr) {
+                    console.warn('Could not parse unexpected response from CSV export as JSON:', parseErr);
+                    // Log the actual response text for debugging
+                    console.warn('Response text was:', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')); // Log first 200 chars
+                }
+                throw new Error(errorMessage);
             }
         } else {
             // Handle cases where the response status is not OK (e.g., 404, 500)
