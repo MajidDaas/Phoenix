@@ -259,8 +259,8 @@ def create_app(config_name='default'):
 
         # Convert to array and sort
         results_array = list(results.values())
-        results_array.sort(key=lambda x: x['councilVotes'], reverse=True)  # Sort by council votes
-
+        results_array.sort(key=lambda x: (x['councilVotes'], x['executiveVotes']), reverse=True) # Sort by council votes, then executive votes
+        
         return jsonify({
             'isOpen': False,
             'results': results_array,
