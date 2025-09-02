@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <button class="admin-btn" id="adminBtn">
+    <!-- Removed inline style and added aria-label for accessibility -->
+    <button class="admin-btn" id="adminBtn" aria-label="Admin Panel">
         <i class="fas fa-cog"></i> Admin
     </button>
     <div class="container">
@@ -30,13 +31,13 @@
         </div>
         <div class="card">
             <div class="tabs">
-                <button class="tab active" data-tab="vote">
+                <button class="tab active" data-tab="vote" type="button"> <!-- Added type="button" -->
                     <i class="fas fa-vote-yea"></i> Cast Vote
                 </button>
-                <button class="tab" data-tab="results">
+                <button class="tab" data-tab="results" type="button">
                     <i class="fas fa-chart-bar"></i> View Results
                 </button>
-                <button class="tab" data-tab="info">
+                <button class="tab" data-tab="info" type="button">
                     <i class="fas fa-info-circle"></i> Information
                 </button>
                 <button class="tab" data-tab="admin" style="display: none;">
@@ -59,19 +60,17 @@
                             <li>✅ Secure and anonymous voting</li>
                         </ul>
                     </div>
-                    
                     <div class="demo-auth">
                         <div class="demo-highlight">
                             <p><strong>🎯 RECOMMENDED FOR TESTING:</strong></p>
                             <p>Use Demo Mode to test the voting system immediately without any authentication setup.</p>
-                            <button class="btn demo-btn-primary" id="demoAuthBtn">
+                            <button class="btn demo-btn-primary" id="demoAuthBtn" type="button">
                                 <i class="fas fa-play"></i> Start Demo Mode
                             </button>
                         </div>
-                        
                         <div class="google-auth-section">
                             <p><strong>🔧 Google Authentication (Advanced):</strong></p>
-                            <button class="btn google-signin-btn" id="googleSigninBtn">
+                            <button class="btn google-signin-btn" id="googleSigninBtn" type="button">
                                 <i class="fab fa-google"></i> Sign in with Google
                             </button>
                             <p class="demo-note"><small>Note: Google OAuth2 requires proper setup in Google Cloud Console.</small></p>
@@ -90,10 +89,10 @@
                         <p>Your identity has been verified through Google. You can now proceed to vote.</p>
                         <p><strong>Security Note:</strong> Your vote will be anonymous and secure.</p>
                     </div>
-                    <button class="btn" id="proceedToVoteBtn">
+                    <button class="btn" id="proceedToVoteBtn" type="button">
                         <i class="fas fa-arrow-right"></i> Proceed to Voting
                     </button>
-                    <button class="btn logout-btn" id="logoutBtn">
+                    <button class="btn logout-btn" id="logoutBtn" type="button">
                         <i class="fas fa-sign-out-alt"></i> Sign Out
                     </button>
                     <div id="proceedLoading" class="loader hidden"></div>
@@ -127,7 +126,7 @@
                         <!-- Candidates will be populated by JavaScript -->
                     </div>
                     <div class="text-center mt-30">
-                        <button class="btn" id="submitVoteBtn" disabled>
+                        <button class="btn" id="submitVoteBtn" disabled type="button">
                             <i class="fas fa-check-circle"></i> Submit Your Vote
                         </button>
                         <div id="submitLoading" class="loader hidden"></div>
@@ -154,18 +153,18 @@
                             <p>Voter Turnout</p>
                         </div>
                     </div>
-                  <div id="resultsContent">
-                <div class="status-info">
-                    <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
-                </div>
-                <!-- Chart container will be populated/modified by JavaScript -->
-                <div class="chart-container hidden" id="chartContainer">
-                    <h3><i class="fas fa-chart-bar"></i> Vote Distribution (Top 15 Council Members)</h3>
-                    <div style="position: relative; height: 60vh; max-height: 600px;">
-                        <canvas id="resultsChart"></canvas>
+                    <div id="resultsContent">
+                        <div class="status-info">
+                            <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
+                        </div>
+                        <!-- Chart container will be populated/modified by JavaScript -->
+                        <div class="chart-container hidden" id="chartContainer">
+                            <h3><i class="fas fa-chart-bar"></i> Vote Distribution (Top 15 Council Members)</h3>
+                            <div style="position: relative; height: 60vh; max-height: 600px;">
+                                <canvas id="resultsChart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
                 </div>
             </div>
             <!-- Information Tab -->
@@ -193,20 +192,21 @@
                     <h3><i class="fas fa-users"></i> Meet the Candidates</h3>
                     <p>Learn more about the individuals running for council positions.</p>
                     <div class="candidate-list">
+                        <!-- Added alt attributes for accessibility -->
                         <div class="candidate-item">
-                            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Candidate" class="candidate-image">
+                            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sarah Johnson" class="candidate-image">
                             <div class="candidate-name">Sarah Johnson</div>
                             <div class="candidate-position">Community Advocate</div>
                             <p>20 years of experience in community development and social programs.</p>
                         </div>
                         <div class="candidate-item">
-                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Candidate" class="candidate-image">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Michael Chen" class="candidate-image">
                             <div class="candidate-name">Michael Chen</div>
                             <div class="candidate-position">Education Specialist</div>
                             <p>Former school board member with expertise in educational policy.</p>
                         </div>
                         <div class="candidate-item">
-                            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Candidate" class="candidate-image">
+                            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Emma Rodriguez" class="candidate-image">
                             <div class="candidate-name">Emma Rodriguez</div>
                             <div class="candidate-position">Environmental Planner</div>
                             <p>Urban planning expert focused on sustainable development.</p>
@@ -222,28 +222,28 @@
                         <label for="adminPassword">Admin Password:</label>
                         <input type="password" id="adminPassword" placeholder="Enter admin password">
                     </div>
-                    <button class="btn" id="authAdminBtn">
+                    <button class="btn" id="authAdminBtn" type="button">
                         <i class="fas fa-sign-in-alt"></i> Authenticate
                     </button>
                     <div id="adminAuthLoading" class="loader hidden"></div>
                 </div>
-                <div class="card hidden" id="adminControls"">
+                <div class="card hidden" id="adminControls">
                     <h3><i class="fas fa-tasks"></i> Election Controls</h3>
                     <div class="form-group">
                         <label>Election Status:</label>
-                        <button class="btn btn-success" id="electionToggle">
+                        <button class="btn btn-success" id="electionToggle" type="button">
                             <i class="fas fa-toggle-on"></i> Close Election
                         </button>
                     </div>
                     <div class="form-group">
                         <h4><i class="fas fa-database"></i> Data Management</h4>
-                        <button class="btn btn-secondary" id="refreshDataBtn">
+                        <button class="btn btn-secondary" id="refreshDataBtn" type="button">
                             <i class="fas fa-sync"></i> Refresh Data
                         </button>
-                        <button class="btn btn-success" id="exportVotesBtn">
+                        <button class="btn btn-success" id="exportVotesBtn" type="button">
                             <i class="fas fa-download"></i> Export Votes
                         </button>
-                        <button class="btn btn-warning" id="backupToCloudBtn">
+                        <button class="btn btn-warning" id="backupToCloudBtn" type="button">
                             <i class="fas fa-cloud-upload-alt"></i> Backup to Cloud
                         </button>
                     </div>
@@ -259,7 +259,7 @@
         </div>
     </div>
     <!-- Winner Info Popup Card -->
-    <div id="winnerInfoPopup">
+    <div id="winnerInfoPopup" role="dialog" aria-hidden="true"> <!-- Added ARIA roles -->
         <h4 id="popupTitle">Winner Information</h4>
         <p><strong>Name:</strong> <span id="popupName"></span></p>
         <p><strong>Position:</strong> <span id="popupPosition"></span></p>
