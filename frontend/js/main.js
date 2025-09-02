@@ -756,69 +756,95 @@ async function backupToCloud() {
 async function exportVotesToCSV() {
     try {
         // Show loading state if desired (optional for this action)
-        // const exportCSVBtn = document.getElementById('exportVotesToCSVBtn');
-        // const originalHTML = exportCSVBtn.innerHTML;
-        // exportCSVBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
-        // exportCSVBtn.disabled = true;
+        const exportCSVBtn = document.getElementById('exportVotesToCSVBtn');
+        let originalHTML = '';
+        if (exportCSVBtn) {
+            originalHTML = exportCSVBtn.innerHTML;
+            exportCSVBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            exportCSVBtn.disabled = true;
+        }
 
         const response = await ElectionAPI.exportVotesToCSV();
 
-        if (response.ok && response.headers.get('Content-Type')?.includes('text/csv')) {
-            // --- Handle the file download ---
-            // Get the filename from the Content-Disposition header if available
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let filename = 'votes_export.csv'; // Default filename
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-                if (filenameMatch.length === 2) {
-                    filename = filenameMatch[1];
+        if (response.ok) {
+            // --- Handle the successful file download ---
+            // Check if the response is actually a CSV file based on headers
+            const contentType = response.headers.get('Content-Type');
+            if (contentType && contentType.includes('text/csv')) {
+                // Get the filename from the Content-Disposition header if available
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'votes_export.csv'; // Default filename
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                    if (filenameMatch && filenameMatch.length === 2) {
+                        filename = filenameMatch[1];
+                    }
                 }
+
+                // Convert the response body to a Blob
+                const blob = await response.blob();
+
+                // Create a temporary download link
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename; // Use the filename from the header
+
+                // Programmatically click the link to trigger the download
+                document.body.appendChild(link); // Required for Firefox
+                link.click();
+
+                // Clean up: remove the link and revoke the object URL
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                showMessage(`Votes exported successfully as ${filename}`, 'success');
+            } else {
+                 // Response was OK, but not CSV. Might be an unexpected JSON error from backend.
+                 // Try parsing as JSON
+                 let errorMessage = 'Unexpected response format from server during CSV export.';
+                 try {
+                     const errorData = await response.json();
+                     errorMessage = errorData.message || errorMessage;
+                 } catch (parseErr) {
+                     console.warn('Could not parse unexpected response from CSV export:', parseErr);
+                     // If parsing fails, log the response text for debugging
+                     const responseText = await response.text().catch(() => '');
+                     console.warn('Response text was:', responseText.substring(0, 200) + '...'); // Log first 200 chars
+                 }
+                 throw new Error(errorMessage);
             }
-
-            // Convert the response body to a Blob
-            const blob = await response.blob();
-
-            // Create a temporary download link
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename; // Use the filename from the header
-
-            // Programmatically click the link to trigger the download
-            document.body.appendChild(link); // Required for Firefox
-            link.click();
-
-            // Clean up: remove the link and revoke the object URL
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-
-            showMessage(`Votes exported successfully as ${filename}`, 'success');
         } else {
-            // Handle cases where the response isn't a successful CSV download
-            // e.g., backend returned an error JSON message
-            let errorMessage = 'Failed to export votes to CSV.';
+            // Handle cases where the response status is not OK (e.g., 404, 500)
+            // The backend should ideally return JSON errors for these cases.
+            let errorMessage = `Failed to export votes to CSV (Status: ${response.status}).`;
             try {
                 // Try to parse error message from JSON response
                 const errorData = await response.json();
                 errorMessage = errorData.message || errorMessage;
             } catch (parseErr) {
                 // If parsing fails, maybe it's plain text or unexpected format
-                console.warn('Could not parse error response from CSV export:', parseErr);
+                console.warn('Could not parse error response (status ' + response.status + ') from CSV export:', parseErr);
+                // Optionally, try to get text content if JSON parsing fails
+                // const responseText = await response.text().catch(() => '');
+                // if (responseText) {
+                //     console.warn('Response text was:', responseText.substring(0, 200) + '...');
+                // }
             }
             throw new Error(errorMessage);
         }
     } catch (err) {
+        // Handle network errors or other exceptions during the fetch process
         console.error('Error exporting votes to CSV:', err);
         showMessage(`Error exporting votes to CSV: ${err.message}`, 'error');
     } finally {
         // Restore button state if loading indicator was used
-        // if (exportCSVBtn) {
-        //     exportCSVBtn.disabled = false;
-        //     exportCSVBtn.innerHTML = originalHTML;
-        // }
+        if (exportCSVBtn) {
+            exportCSVBtn.disabled = false;
+            exportCSVBtn.innerHTML = originalHTML;
+        }
     }
 }
-
 // --- Utility Functions ---
 
 // Show status message
