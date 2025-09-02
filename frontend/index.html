@@ -8,9 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
-    <button class="admin-btn" id="adminBtn">
+    <button class="admin-btn" id="adminBtn" aria-label="Admin Panel">
         <i class="fas fa-cog"></i> Admin
     </button>
     <div class="container">
@@ -30,16 +31,16 @@
         </div>
         <div class="card">
             <div class="tabs">
-                <button class="tab active" data-tab="vote">
+                <button class="tab active" data-tab="vote" type="button">
                     <i class="fas fa-vote-yea"></i> Cast Vote
                 </button>
-                <button class="tab" data-tab="results">
+                <button class="tab" data-tab="results" type="button">
                     <i class="fas fa-chart-bar"></i> View Results
                 </button>
-                <button class="tab" data-tab="info">
+                <button class="tab" data-tab="info" type="button">
                     <i class="fas fa-info-circle"></i> Information
                 </button>
-                <button class="tab" data-tab="admin" style="display: none;">
+                <button class="tab" data-tab="admin" type="button" style="display: none;">
                     <i class="fas fa-cog"></i> Admin
                 </button>
             </div>
@@ -59,20 +60,23 @@
                             <li>✅ Secure and anonymous voting</li>
                         </ul>
                     </div>
+
+                    <!-- Google Sign-In Section -->
+                    <div class="google-auth-section">
+                        <p><strong>Sign in with your Google account:</strong></p>
+                        <button class="btn google-signin-btn" id="googleSigninBtn" type="button">
+                            <i class="fab fa-google"></i> Sign in with Google
+                        </button>
+                        <p class="demo-note"><small>Note: Google OAuth2 requires proper setup in Google Cloud Console.</small></p>
+                    </div>
+
                     <div class="demo-auth">
                         <div class="demo-highlight">
                             <p><strong>🎯 RECOMMENDED FOR TESTING:</strong></p>
                             <p>Use Demo Mode to test the voting system immediately without any authentication setup.</p>
-                            <button class="btn demo-btn-primary" id="demoAuthBtn">
+                            <button class="btn demo-btn-primary" id="demoAuthBtn" type="button">
                                 <i class="fas fa-play"></i> Start Demo Mode
                             </button>
-                        </div>
-                        <div class="google-auth-section">
-                            <p><strong>🔧 Google Authentication (Advanced):</strong></p>
-                            <button class="btn google-signin-btn" id="googleSigninBtn">
-                                <i class="fab fa-google"></i> Sign in with Google
-                            </button>
-                            <p class="demo-note"><small>Note: Google OAuth2 requires proper setup in Google Cloud Console.</small></p>
                         </div>
                     </div>
                     <div id="authLoading" class="loader hidden"></div>
@@ -88,10 +92,10 @@
                         <p>Your identity has been verified through Google. You can now proceed to vote.</p>
                         <p><strong>Security Note:</strong> Your vote will be anonymous and secure.</p>
                     </div>
-                    <button class="btn" id="proceedToVoteBtn">
+                    <button class="btn" id="proceedToVoteBtn" type="button">
                         <i class="fas fa-arrow-right"></i> Proceed to Voting
                     </button>
-                    <button class="btn logout-btn" id="logoutBtn">
+                    <button class="btn logout-btn" id="logoutBtn" type="button">
                         <i class="fas fa-sign-out-alt"></i> Sign Out
                     </button>
                     <div id="proceedLoading" class="loader hidden"></div>
@@ -125,7 +129,7 @@
                         <!-- Candidates will be populated by JavaScript -->
                     </div>
                     <div class="text-center mt-30">
-                        <button class="btn" id="submitVoteBtn" disabled>
+                        <button class="btn" id="submitVoteBtn" disabled type="button">
                             <i class="fas fa-check-circle"></i> Submit Your Vote
                         </button>
                         <div id="submitLoading" class="loader hidden"></div>
@@ -156,6 +160,13 @@
                         <div class="status-info">
                             <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
                         </div>
+                        <!-- Chart container will be populated/modified by JavaScript -->
+                        <div class="chart-container hidden" id="chartContainer">
+                            <h3><i class="fas fa-chart-bar"></i> Vote Distribution (Top 15 Council Members)</h3>
+                            <div style="position: relative; height: 60vh; max-height: 600px;">
+                                <canvas id="resultsChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -183,7 +194,6 @@
                 <div class="card">
                     <h3><i class="fas fa-users"></i> Meet the Candidates</h3>
                     <p>Learn more about the individuals running for council positions.</p>
-                    <!-- Container for dynamically loaded candidate info -->
                     <div class="candidate-list" id="infoCandidateList">
                         <!-- Candidates will be populated by JavaScript -->
                     </div>
@@ -197,7 +207,7 @@
                         <label for="adminPassword">Admin Password:</label>
                         <input type="password" id="adminPassword" placeholder="Enter admin password">
                     </div>
-                    <button class="btn" id="authAdminBtn">
+                    <button class="btn" id="authAdminBtn" type="button">
                         <i class="fas fa-sign-in-alt"></i> Authenticate
                     </button>
                     <div id="adminAuthLoading" class="loader hidden"></div>
@@ -206,19 +216,19 @@
                     <h3><i class="fas fa-tasks"></i> Election Controls</h3>
                     <div class="form-group">
                         <label>Election Status:</label>
-                        <button class="btn btn-success" id="electionToggle">
+                        <button class="btn btn-success" id="electionToggle" type="button">
                             <i class="fas fa-toggle-on"></i> Close Election
                         </button>
                     </div>
                     <div class="form-group">
                         <h4><i class="fas fa-database"></i> Data Management</h4>
-                        <button class="btn btn-secondary" id="refreshDataBtn">
+                        <button class="btn btn-secondary" id="refreshDataBtn" type="button">
                             <i class="fas fa-sync"></i> Refresh Data
                         </button>
-                        <button class="btn btn-success" id="exportVotesBtn">
+                        <button class="btn btn-success" id="exportVotesBtn" type="button">
                             <i class="fas fa-download"></i> Export Votes
                         </button>
-                        <button class="btn btn-warning" id="backupToCloudBtn">
+                        <button class="btn btn-warning" id="backupToCloudBtn" type="button">
                             <i class="fas fa-cloud-upload-alt"></i> Backup to Cloud
                         </button>
                     </div>
@@ -234,7 +244,7 @@
         </div>
     </div>
     <!-- Winner Info Popup Card -->
-    <div id="winnerInfoPopup">
+    <div id="winnerInfoPopup" role="dialog" aria-hidden="true">
         <h4 id="popupTitle">Winner Information</h4>
         <p><strong>Name:</strong> <span id="popupName"></span></p>
         <p><strong>Position:</strong> <span id="popupPosition"></span></p>

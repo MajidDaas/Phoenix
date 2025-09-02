@@ -23,7 +23,7 @@ const winnerInfoPopup = document.getElementById('winnerInfoPopup');
 
 // --- UI Functions ---
 
-// Initialize candidates for voting (Simple cards for voting tab)
+// Initialize candidates for voting
 function initCandidates() {
     candidateList.innerHTML = '';
     candidates.forEach(candidate => {
@@ -34,7 +34,6 @@ function initCandidates() {
         const card = document.createElement('div');
         card.className = 'candidate-item';
         card.dataset.id = candidate.id;
-        // --- Simplified Voting Card ---
         card.innerHTML = `
             <div class="candidate-info" data-id="${candidate.id}">
                 <i class="fas fa-info"></i>
@@ -51,7 +50,6 @@ function initCandidates() {
                 <p><strong>Weekly Activity:</strong> ${candidate.activity} hours</p>
             </div>
         `;
-        // --- End Simplified Voting Card ---
         card.addEventListener('click', (e) => {
             // Prevent triggering when clicking on info icon or close button
             if (e.target.closest('.candidate-info') || e.target.closest('.close-details')) {
@@ -80,7 +78,7 @@ function initCandidates() {
     });
 }
 
-// Show candidate details (Popup for voting tab)
+// Show candidate details
 function showCandidateDetails(id) {
     // Hide any currently active details
     if (activeDetails) {
@@ -93,7 +91,7 @@ function showCandidateDetails(id) {
     }
 }
 
-// Hide candidate details (Popup for voting tab)
+// Hide candidate details
 function hideCandidateDetails(id) {
     const details = document.getElementById(`details-${id}`);
     if (details) {
@@ -244,7 +242,7 @@ Executive Officers: ${executiveCandidates.length}`, 'success');
 }
 
 
-// Render results
+// Render results - Showing only Top 15 Council Members
 async function renderResults() {
     try {
         const resultsData = await ElectionAPI.getResults();
@@ -260,20 +258,41 @@ async function renderResults() {
                     <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
                 </div>
             `;
+            // Destroy existing chart if election reopens
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+            // Hide the pre-defined chart container if election is open
+            const chartContainerElement = document.getElementById('chartContainer');
+            if (chartContainerElement) {
+                chartContainerElement.classList.add('hidden');
+            }
             return;
         }
 
-        // Use results from backend
-        const resultsArray = resultsData.results;
-        // Sort to identify executive officers (top 7 by executive votes)
-        const sortedByExecutiveVotes = [...resultsArray].sort((a, b) => b.executiveVotes - a.executiveVotes);
-        const executiveOfficers = sortedByExecutiveVotes.slice(0, 7).map(c => c.name);
+        // Use results from backend (already sorted by council votes desc, then executive votes desc)
+        const fullResultsArray = resultsData.results;
+
+        // --- NEW: Get only the top 15 candidates based on Council Votes ---
+        const top15ResultsArray = fullResultsArray.slice(0, 15);
+        // --- END NEW ---
+
+        // --- MODIFIED: Identify executive officers within the TOP 15 ---
+        // Sort the TOP 15 by executive votes to find the top 7 EOs among them
+        const sortedTop15ByExecutiveVotes = [...top15ResultsArray].sort((a, b) => b.executiveVotes - a.executiveVotes);
+        const executiveOfficers = sortedTop15ByExecutiveVotes.slice(0, 7).map(c => c.name);
+        // --- END MODIFIED ---
 
         let resultsHTML = `<div class="results-container">`;
-        resultsArray.forEach(candidate => {
+
+        // --- MODIFIED: Loop only through the TOP 15 results ---
+        top15ResultsArray.forEach(candidate => {
+        // --- END MODIFIED ---
             // Find the full candidate object to get winner status and other details
             const fullCandidate = candidates.find(c => c.id === candidate.id);
             const isExecutive = executiveOfficers.includes(candidate.name);
+
             // Add data attribute for winner status and use winner-name class for styling and interaction
             const winnerClass = (fullCandidate && fullCandidate.isWinner) ? 'winner-name' : '';
             const winnerDataAttr = (fullCandidate && fullCandidate.isWinner) ? `data-is-winner="true"` : `data-is-winner="false"`;
@@ -292,14 +311,16 @@ async function renderResults() {
                     <div class="progress-container">
                         <div class="progress-label">Council Votes:</div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${Math.min(100, (candidate.councilVotes / (resultsArray[0]?.councilVotes || 1)) * 100)}%"></div>
+                            <!-- Adjust width calculation based on the max council vote among the TOP 15 -->
+                            <div class="progress-fill" style="width: ${Math.min(100, (candidate.councilVotes / (top15ResultsArray[0]?.councilVotes || 1)) * 100)}%"></div>
                         </div>
                         <div class="progress-value">${candidate.councilVotes.toLocaleString()}</div>
                     </div>
                     <div class="progress-container">
                         <div class="progress-label">Executive Votes:</div>
                         <div class="progress-bar">
-                            <div class="progress-fill executive" style="width: ${Math.min(100, (candidate.executiveVotes / (sortedByExecutiveVotes[0]?.executiveVotes || 1)) * 100)}%"></div>
+                            <!-- Adjust width calculation based on the max executive vote among the TOP 15 by exec votes -->
+                            <div class="progress-fill executive" style="width: ${Math.min(100, (candidate.executiveVotes / (sortedTop15ByExecutiveVotes[0]?.executiveVotes || 1)) * 100)}%"></div>
                         </div>
                         <div class="progress-value">${candidate.executiveVotes.toLocaleString()}</div>
                     </div>
@@ -307,77 +328,150 @@ async function renderResults() {
             `;
         });
         resultsHTML += `</div>`;
-        // Add chart container
-        resultsHTML += `
-            <div class="chart-container">
-                <h3><i class="fas fa-chart-bar"></i> Vote Distribution</h3>
-                <canvas id="resultsChart" width="400" height="200"></canvas>
-            </div>
-        `;
         resultsContent.innerHTML = resultsHTML;
 
-        // Create chart
+        // --- MODIFIED: Show the pre-defined chart container ---
+        const chartContainerElement = document.getElementById('chartContainer');
+        if (chartContainerElement) {
+            chartContainerElement.classList.remove('hidden');
+        }
+        // --- END MODIFIED ---
+
+        // --- MODIFIED: Create chart using only the TOP 15 data ---
+        // Use the explicitly sorted data for the chart to guarantee the order matches the backend sorting logic:
+        // Primary sort: Council Votes (descending), Secondary sort: Executive Votes (descending) for ties.
+        const sortedChartData = [...top15ResultsArray]; // Create a copy to avoid modifying the original slice
+        sortedChartData.sort((a, b) => {
+            // Primary sort: Council Votes (descending)
+            if (b.councilVotes !== a.councilVotes) {
+                return b.councilVotes - a.councilVotes;
+            }
+            // Secondary sort: Executive Votes (descending) for ties in council votes
+            return b.executiveVotes - a.executiveVotes;
+        });
+
+        // Create chart - Ensuring it's destroyed and recreated correctly
         setTimeout(() => {
             const ctx = document.getElementById('resultsChart').getContext('2d');
             if (currentChart) {
                 currentChart.destroy();
+                currentChart = null; // Ensure it's nulled after destruction
             }
+
             currentChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: resultsArray.map(c => c.name),
+                    // --- USE THE EXPLICITLY SORTED TOP 15 DATA ---
+                    labels: sortedChartData.map(c => c.name),
                     datasets: [
                         {
                             label: 'Council Votes',
-                            data: resultsArray.map(c => c.councilVotes),
-                            backgroundColor: 'rgba(0, 150, 87, 0.7)',
+                            data: sortedChartData.map(c => c.councilVotes),
+                            backgroundColor: 'rgba(0, 150, 87, 0.7)', // Green
                             borderColor: 'rgba(0, 150, 87, 1)',
                             borderWidth: 1
                         },
                         {
                             label: 'Executive Votes',
-                            data: resultsArray.map(c => c.executiveVotes),
-                            backgroundColor: 'rgba(243, 156, 18, 0.7)',
+                            data: sortedChartData.map(c => c.executiveVotes),
+                            backgroundColor: 'rgba(243, 156, 18, 0.7)', // Orange
                             borderColor: 'rgba(243, 156, 18, 1)',
                             borderWidth: 1
                         }
                     ]
+                    // --- END USE OF SORTED DATA ---
                 },
                 options: {
-                    responsive: true,
+                    responsive: true,              // Crucial for responsiveness
+                    maintainAspectRatio: false,    // Allow height to be set by CSS/container
+                    indexAxis: 'y',                // Horizontal bar chart for better mobile label display
                     plugins: {
                         legend: {
                             position: 'top',
+                            labels: {
+                                // Improve legend readability on smaller screens
+                                font: function(context) {
+                                    const width = context.chart.width;
+                                    return {
+                                        size: width < 500 ? 10 : width < 800 ? 12 : 14
+                                    };
+                                }
+                            }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y} votes`;
+                                    // Adjust tooltip for horizontal chart (x-axis value)
+                                    return `${context.dataset.label}: ${context.parsed.x} votes`;
                                 }
                             }
                         }
                     },
                     scales: {
-                        y: {
+                        x: { // x-axis for horizontal bar chart (represents vote count)
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Number of Votes'
+                                text: 'Number of Votes',
+                                font: function(context) {
+                                    const width = context.chart.width;
+                                    return {
+                                        size: width < 500 ? 10 : width < 800 ? 12 : 14
+                                    };
+                                }
+                            },
+                            ticks: {
+                                font: function(context) {
+                                    const width = context.chart.width;
+                                    return {
+                                        size: width < 500 ? 8 : width < 800 ? 10 : 12
+                                    };
+                                }
                             }
                         },
-                        x: {
+                        y: { // y-axis for horizontal bar chart (represents candidate names)
                             title: {
                                 display: true,
-                                text: 'Candidates'
+                                text: 'Top 15 Council Members',
+                                font: function(context) {
+                                    const width = context.chart.width;
+                                    return {
+                                        size: width < 500 ? 10 : width < 800 ? 12 : 14
+                                    };
+                                }
+                            },
+                            ticks: {
+                                font: function(context) {
+                                    const width = context.chart.width;
+                                    return {
+                                        size: width < 500 ? 8 : width < 800 ? 10 : 12
+                                    };
+                                },
+                                // Auto-skip labels if they get too crowded, keep horizontal
+                                autoSkip: false, // Try not to skip names if possible
+                                maxRotation: 0,  // Keep labels horizontal
+                                minRotation: 0
                             }
+                            // reverse: true // Optional: Uncomment to reverse the bar order if needed
                         }
                     }
                 }
             });
         }, 100);
+        // --- END MODIFIED CHART CREATION ---
     } catch (err) {
         console.error('Error fetching results:', err);
         resultsContent.innerHTML = `<div class="status-error"><p>Error loading results. Please try again later.</p></div>`;
+         // Destroy existing chart on error
+        if (currentChart) {
+            currentChart.destroy();
+            currentChart = null;
+        }
+        // Hide the chart container on error
+        const chartContainerElement = document.getElementById('chartContainer');
+        if (chartContainerElement) {
+            chartContainerElement.classList.add('hidden');
+        }
     }
 }
 
@@ -407,11 +501,15 @@ function showWinnerPopup(event) {
     winnerInfoPopup.style.top = `${rect.top + scrollTop - winnerInfoPopup.offsetHeight - 10}px`;
     // Show the popup
     winnerInfoPopup.style.display = 'block';
+    // Update ARIA attributes for accessibility
+    winnerInfoPopup.setAttribute('aria-hidden', 'false');
 }
 
 // Hide winner info popup (can be called by clicking outside or a close button if added)
 function hideWinnerPopup() {
     winnerInfoPopup.style.display = 'none';
+    // Update ARIA attributes for accessibility
+    winnerInfoPopup.setAttribute('aria-hidden', 'true');
 }
 // Add event listener to hide popup when clicking anywhere else
 document.addEventListener('click', function(event) {
@@ -423,7 +521,7 @@ document.addEventListener('click', function(event) {
 // --- Voting Process Functions ---
 
 // Request voter ID
-// Google OAuth2 Authentication
+// Google OAuth2 Authentication - FIXED TO AVOID CORS
 async function signInWithGoogle() {
     try {
         // --- CHANGE: Redirect the browser window instead of using fetch ---
@@ -451,6 +549,7 @@ async function signInWithGoogle() {
     // The redirect happens above. The 'finally' block from fetch is not applicable here
     // in the same way, as the page unloads. If the redirect fails, the catch block handles it.
 }
+
 // Demo authentication (skip Google OAuth2)
 async function demoAuth() {
     try {
@@ -682,6 +781,17 @@ const UIController = {
         if (tabName === 'results') {
             renderResults();
         }
+        // Specific actions for the admin tab
+        if (tabName === 'admin') {
+            // Focus the admin password input field when the admin tab is selected
+            const adminPasswordInput = document.getElementById('adminPassword');
+            if (adminPasswordInput) {
+                // Small delay to ensure the tab is fully rendered
+                setTimeout(() => {
+                    adminPasswordInput.focus();
+                }, 10);
+            }
+        }
         // Hide any active details when switching tabs
         if (activeDetails) {
             hideCandidateDetails(activeDetails);
@@ -723,7 +833,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // Admin button
+    // Admin button (top right corner)
     document.getElementById('adminBtn').addEventListener('click', () => {
         UIController.switchTab('admin');
     });
@@ -742,20 +852,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('exportVotesBtn').addEventListener('click', exportVotes);
     document.getElementById('backupToCloudBtn').addEventListener('click', backupToCloud);
 
-    // Initialize the application for the vote tab
-    // initCandidates(); // Don't init candidates here, wait for step 3
-    updateUI();
-    // renderResults(); // Don't render results here, wait for results tab
+    // Allow pressing Enter in the admin password field to trigger authentication
+    const adminPasswordInput = document.getElementById('adminPassword');
+    if (adminPasswordInput) {
+        adminPasswordInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                authenticateAdmin();
+            }
+        });
+    }
 
-// ... (code inside DOMContentLoaded) ...
+    // Initialize the application for the vote tab
+    updateUI(); // Initial UI update
+
     // Add click outside listener for candidate details
     document.addEventListener('click', (e) => {
         if (activeDetails && !e.target.closest('.candidate-item')) {
             hideCandidateDetails(activeDetails);
         }
     });
-    // --- END OF DOMContentLoaded CODE ---
-}); // <-- This is the closing bracket of DOMContentLoaded
+});
 
 // --- NEW FUNCTION: Fetch Candidates from Backend ---
 /**
@@ -794,8 +911,7 @@ async function loadCandidates() {
         // These functions now use the populated `candidates` array
         initCandidates();
         updateUI(); // Update counters, button states based on (initially empty) selections
-        displayInfoCandidates(); // Populate the Info tab candidate list // <-- ADD THIS LINE
-
+        displayInfoCandidates(); // Populate the Info tab candidate list
     } catch (error) {
         // --- HANDLE ERRORS ---
         console.error("Error loading candidates from backend:", error);
@@ -807,13 +923,6 @@ async function loadCandidates() {
                 <p>Please try refreshing the page.</p>
             </div>
         `;
-        // Optionally disable voting if candidates can't be loaded
-        // const submitVoteBtn = document.getElementById('submitVoteBtn');
-        // if (submitVoteBtn) {
-        //     submitVoteBtn.disabled = true;
-        //     submitVoteBtn.title = "Cannot submit vote: Candidate data unavailable.";
-        // }
-
     } finally {
         // The loading indicator is replaced by either candidates or an error message,
         // so no specific cleanup is needed here for it in this structure.
