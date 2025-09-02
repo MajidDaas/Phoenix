@@ -337,20 +337,6 @@ async function renderResults() {
         // --- MODIFIED: Create chart using only the TOP 15 data ---
         // Use the explicitly sorted data for the chart to guarantee the order matches the backend sorting logic:
         // Primary sort: Council Votes (descending), Secondary sort: Executive Votes (descending) for ties.
-        // Even though top15ResultsArray is from the sorted list, Chart.js might need explicit ordering.
-        const sortedChartData = [...top15ResultsArray]; // Create a copy to avoid modifying the original slice
-        sortedChartData.sort((a, b) => {
-            // Primary sort: Council Votes (descending)
-            if (b.councilVotes !== a.councilVotes) {
-                return b.councilVotes - a.councilVotes;
-            }
-            // Secondary sort: Executive Votes (descending) for ties in council votes
-            return b.executiveVotes - a.executiveVotes;
-        });
-
-        // --- MODIFIED: Create chart using only the TOP 15 data ---
-        // Use the explicitly sorted data for the chart to guarantee the order matches the backend sorting logic:
-        // Primary sort: Council Votes (descending), Secondary sort: Executive Votes (descending) for ties.
         const sortedChartData = [...top15ResultsArray]; // Create a copy to avoid modifying the original slice
         sortedChartData.sort((a, b) => {
             // Primary sort: Council Votes (descending)
