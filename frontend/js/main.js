@@ -1,8 +1,5 @@
 // main.js - Main application logic
 
-// Candidate data (for frontend display, results will come from backend)
-// In a fully integrated app, this might also come from an API endpoint
-
 // State management
 let selectedCandidates = [];
 let executiveCandidates = [];
@@ -245,7 +242,7 @@ Executive Officers: ${executiveCandidates.length}`, 'success');
 }
 
 
-// Render results
+// Render results - Showing only Top 15 Council Members
 async function renderResults() {
     try {
         const resultsData = await ElectionAPI.getResults();
@@ -261,20 +258,36 @@ async function renderResults() {
                     <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
                 </div>
             `;
+            // Destroy existing chart if election reopens
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
             return;
         }
 
-        // Use results from backend
-        const resultsArray = resultsData.results;
-        // Sort to identify executive officers (top 7 by executive votes)
-        const sortedByExecutiveVotes = [...resultsArray].sort((a, b) => b.executiveVotes - a.executiveVotes);
-        const executiveOfficers = sortedByExecutiveVotes.slice(0, 7).map(c => c.name);
+        // Use results from backend (already sorted by council votes desc, then executive votes desc)
+        const fullResultsArray = resultsData.results;
+
+        // --- NEW: Get only the top 15 candidates based on Council Votes ---
+        const top15ResultsArray = fullResultsArray.slice(0, 15);
+        // --- END NEW ---
+
+        // --- MODIFIED: Identify executive officers within the TOP 15 ---
+        // Sort the TOP 15 by executive votes to find the top 7 EOs among them
+        const sortedTop15ByExecutiveVotes = [...top15ResultsArray].sort((a, b) => b.executiveVotes - a.executiveVotes);
+        const executiveOfficers = sortedTop15ByExecutiveVotes.slice(0, 7).map(c => c.name);
+        // --- END MODIFIED ---
 
         let resultsHTML = `<div class="results-container">`;
-        resultsArray.forEach(candidate => {
+
+        // --- MODIFIED: Loop only through the TOP 15 results ---
+        top15ResultsArray.forEach(candidate => {
+        // --- END MODIFIED ---
             // Find the full candidate object to get winner status and other details
             const fullCandidate = candidates.find(c => c.id === candidate.id);
             const isExecutive = executiveOfficers.includes(candidate.name);
+
             // Add data attribute for winner status and use winner-name class for styling and interaction
             const winnerClass = (fullCandidate && fullCandidate.isWinner) ? 'winner-name' : '';
             const winnerDataAttr = (fullCandidate && fullCandidate.isWinner) ? `data-is-winner="true"` : `data-is-winner="false"`;
@@ -293,14 +306,16 @@ async function renderResults() {
                     <div class="progress-container">
                         <div class="progress-label">Council Votes:</div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${Math.min(100, (candidate.councilVotes / (resultsArray[0]?.councilVotes || 1)) * 100)}%"></div>
+                            <!-- Adjust width calculation based on the max council vote among the TOP 15 -->
+                            <div class="progress-fill" style="width: ${Math.min(100, (candidate.councilVotes / (top15ResultsArray[0]?.councilVotes || 1)) * 100)}%"></div>
                         </div>
                         <div class="progress-value">${candidate.councilVotes.toLocaleString()}</div>
                     </div>
                     <div class="progress-container">
                         <div class="progress-label">Executive Votes:</div>
                         <div class="progress-bar">
-                            <div class="progress-fill executive" style="width: ${Math.min(100, (candidate.executiveVotes / (sortedByExecutiveVotes[0]?.executiveVotes || 1)) * 100)}%"></div>
+                            <!-- Adjust width calculation based on the max executive vote among the TOP 15 by exec votes -->
+                            <div class="progress-fill executive" style="width: ${Math.min(100, (candidate.executiveVotes / (sortedTop15ByExecutiveVotes[0]?.executiveVotes || 1)) * 100)}%"></div>
                         </div>
                         <div class="progress-value">${candidate.executiveVotes.toLocaleString()}</div>
                     </div>
@@ -311,22 +326,17 @@ async function renderResults() {
         // Add chart container
         resultsHTML += `
             <div class="chart-container">
-                <h3><i class="fas fa-chart-bar"></i> Vote Distribution</h3>
-                <canvas id="resultsChart" width="400" height="200"></canvas>
+                <h3><i class="fas fa-chart-bar"></i> Vote Distribution (Top 15 Council Members)</h3>
+                <canvas id="resultsChart" width="400" height="400"></canvas> <!-- Increased height for better mobile display -->
             </div>
         `;
         resultsContent.innerHTML = resultsHTML;
 
-        // Create chart
-        setTimeout(() => {
-            const ctx = document.getElementById('resultsChart').getContext('2d');
-            if (currentChart) {
-                currentChart.destroy();
-            }
-        // --- SORT DATA FOR CHART (ENSURE CONSISTENCY) ---
-        // Explicitly sort the data for the chart to guarantee the order matches the backend sorting logic:
+        // --- MODIFIED: Create chart using only the TOP 15 data ---
+        // Use the explicitly sorted data for the chart to guarantee the order matches the backend sorting logic:
         // Primary sort: Council Votes (descending), Secondary sort: Executive Votes (descending) for ties.
-        const sortedChartData = [...resultsArray]; // Create a copy to avoid modifying the original
+        // Even though top15ResultsArray is from the sorted list, Chart.js might need explicit ordering.
+        const sortedChartData = [...top15ResultsArray]; // Create a copy to avoid modifying the original slice
         sortedChartData.sort((a, b) => {
             // Primary sort: Council Votes (descending)
             if (b.councilVotes !== a.councilVotes) {
@@ -335,68 +345,107 @@ async function renderResults() {
             // Secondary sort: Executive Votes (descending) for ties in council votes
             return b.executiveVotes - a.executiveVotes;
         });
-        // --- END SORT ---
 
-        currentChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                // --- USE THE EXPLICITLY SORTED DATA ---
-                labels: sortedChartData.map(c => c.name),
-                datasets: [
-                    {
-                        label: 'Council Votes',
-                        data: sortedChartData.map(c => c.councilVotes),
-                        backgroundColor: 'rgba(0, 150, 87, 0.7)', // Green
-                        borderColor: 'rgba(0, 150, 87, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Executive Votes',
-                        data: sortedChartData.map(c => c.executiveVotes),
-                        backgroundColor: 'rgba(243, 156, 18, 0.7)', // Orange
-                        borderColor: 'rgba(243, 156, 18, 1)',
-                        borderWidth: 1
-                    }
-                ]
-                // --- END USE OF SORTED DATA ---
-            },
-            options: {
-                responsive: true,
-                indexAxis: 'y', // Makes it a horizontal bar chart
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.parsed.x} votes`; // x for horizontal
+        // Create chart - Ensuring it's destroyed and recreated correctly
+        setTimeout(() => {
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    // --- USE THE EXPLICITLY SORTED TOP 15 DATA ---
+                    labels: sortedChartData.map(c => c.name),
+                    datasets: [
+                        {
+                            label: 'Council Votes',
+                            data: sortedChartData.map(c => c.councilVotes),
+                            backgroundColor: 'rgba(0, 150, 87, 0.7)', // Green
+                            borderColor: 'rgba(0, 150, 87, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Executive Votes',
+                            data: sortedChartData.map(c => c.executiveVotes),
+                            backgroundColor: 'rgba(243, 156, 18, 0.7)', // Orange
+                            borderColor: 'rgba(243, 156, 18, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                    // --- END USE OF SORTED DATA ---
+                },
+                options: {
+                    responsive: true, // Make chart responsive
+                    maintainAspectRatio: false, // Allow height to be set
+                    indexAxis: 'y', // Makes it a horizontal bar chart
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                // Improve legend readability on smaller screens
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.x} votes`; // x for horizontal
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    x: { // x-axis for horizontal bar chart
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Votes'
-                        }
                     },
-                    y: { // y-axis for horizontal bar chart (candidate names)
-                        title: {
-                            display: true,
-                            text: 'Candidates'
+                    scales: {
+                        x: { // x-axis for horizontal bar chart
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Votes',
+                                font: {
+                                    size: 12 // Smaller font for axis title
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 10 // Smaller font for ticks
+                                }
+                            }
+                        },
+                        y: { // y-axis for horizontal bar chart (candidate names)
+                            title: {
+                                display: true,
+                                text: 'Top 15 Council Members',
+                                font: {
+                                    size: 12 // Smaller font for axis title
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    size: 10 // Smaller font for candidate names
+                                },
+                                // Auto-skip labels if they get too crowded
+                                autoSkip: false,
+                                maxRotation: 0, // Keep labels horizontal
+                                minRotation: 0
+                            }
+                            // reverse: true // Optional: Uncomment to reverse the order if needed
                         }
-                        // reverse: true // Optional: Uncomment to reverse the order if needed
                     }
                 }
-            }
-        });
+            });
         }, 100);
+        // --- END MODIFIED CHART CREATION ---
     } catch (err) {
         console.error('Error fetching results:', err);
         resultsContent.innerHTML = `<div class="status-error"><p>Error loading results. Please try again later.</p></div>`;
+         // Destroy existing chart on error
+        if (currentChart) {
+            currentChart.destroy();
+            currentChart = null;
+        }
     }
 }
 
@@ -454,11 +503,11 @@ async function signInWithGoogle() {
         if (response.status === 500) {
             throw new Error('Google OAuth2 not configured');
         }
-        
+
         // If we get here, Google OAuth2 is configured but may have issues
         // For now, let's suggest using demo mode
         showMessage('Google OAuth2 is experiencing issues. Please use Demo Mode for testing.', 'error');
-        
+
     } catch (err) {
         console.error('Error initiating Google sign-in:', err);
         if (err.message === 'Google OAuth2 not configured') {
@@ -479,7 +528,7 @@ async function demoAuth() {
         // Show loading state
         document.getElementById('demoAuthBtn').disabled = true;
         document.getElementById('authLoading').classList.remove('hidden');
-        
+
         // Call demo authentication endpoint
         const response = await fetch('/api/auth/demo', {
             method: 'POST',
@@ -487,19 +536,19 @@ async function demoAuth() {
                 'Content-Type': 'application/json'
             }
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             currentUser = data.user;
-            
+
             // Show step 3 directly
             document.getElementById('step1').classList.add('hidden');
             document.getElementById('step2').classList.add('hidden');
             document.getElementById('step3').classList.remove('hidden');
-            
+
             // Update UI with demo user info
             document.getElementById('confirmedUserName').textContent = currentUser.name;
-            
+
             // Initialize candidates
             initCandidates();
             updateUI();
@@ -570,7 +619,7 @@ async function logout() {
 function handleAuthCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const authenticated = urlParams.get('authenticated');
-    
+
     if (authenticated === 'true') {
         // User was redirected back from Google OAuth2
         checkAuthStatus();
@@ -775,7 +824,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('exportVotesBtn').addEventListener('click', exportVotes);
     document.getElementById('backupToCloudBtn').addEventListener('click', backupToCloud);
 
-
+    // Allow pressing Enter in the admin password field to trigger authentication
     const adminPasswordInput = document.getElementById('adminPassword');
     if (adminPasswordInput) {
         adminPasswordInput.addEventListener('keydown', function(event) {
@@ -785,22 +834,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     }
-    // Initialize the application for the vote tab
-    // initCandidates(); // Don't init candidates here, wait for step 3
-    updateUI();
-    // renderResults(); // Don't render results here, wait for results tab
 
-// ... (code inside DOMContentLoaded) ...
+    // Initialize the application for the vote tab
+    updateUI(); // Initial UI update
+
     // Add click outside listener for candidate details
     document.addEventListener('click', (e) => {
         if (activeDetails && !e.target.closest('.candidate-item')) {
             hideCandidateDetails(activeDetails);
         }
     });
-    // --- END OF DOMContentLoaded CODE ---
-}); // <-- This is the closing bracket of DOMContentLoaded
+});
 
-// --- MOVE THE loadCandidates FUNCTION HERE ---
 // --- NEW FUNCTION: Fetch Candidates from Backend ---
 /**
  * Fetches the list of candidates from the backend API.
@@ -850,19 +895,9 @@ async function loadCandidates() {
                 <p>Please try refreshing the page.</p>
             </div>
         `;
-        // Optionally disable voting if candidates can't be loaded
-        // const submitVoteBtn = document.getElementById('submitVoteBtn');
-        // if (submitVoteBtn) {
-        //     submitVoteBtn.disabled = true;
-        //     submitVoteBtn.title = "Cannot submit vote: Candidate data unavailable.";
-        // }
-
     } finally {
         // The loading indicator is replaced by either candidates or an error message,
         // so no specific cleanup is needed here for it in this structure.
     }
 }
 // --- END NEW FUNCTION ---
-
-// --- Event Listeners ---
-// (Rest of your code, like other functions, UIController, etc.)
