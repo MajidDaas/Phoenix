@@ -154,11 +154,18 @@
                             <p>Voter Turnout</p>
                         </div>
                     </div>
-                    <div id="resultsContent">
-                        <div class="status-info">
-                            <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
-                        </div>
+                  <div id="resultsContent">
+                <div class="status-info">
+                    <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
+                </div>
+                <!-- Chart container will be populated/modified by JavaScript -->
+                <div class="chart-container hidden" id="chartContainer">
+                    <h3><i class="fas fa-chart-bar"></i> Vote Distribution (Top 15 Council Members)</h3>
+                    <div style="position: relative; height: 60vh; max-height: 600px;">
+                        <canvas id="resultsChart"></canvas>
                     </div>
+                </div>
+            </div>
                 </div>
             </div>
             <!-- Information Tab -->
