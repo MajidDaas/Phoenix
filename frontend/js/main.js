@@ -323,58 +323,76 @@ async function renderResults() {
             if (currentChart) {
                 currentChart.destroy();
             }
-            currentChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: resultsArray.map(c => c.name),
-                    datasets: [
-                        {
-                            label: 'Council Votes',
-                            data: resultsArray.map(c => c.councilVotes),
-                            backgroundColor: 'rgba(0, 150, 87, 0.7)',
-                            borderColor: 'rgba(0, 150, 87, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Executive Votes',
-                            data: resultsArray.map(c => c.executiveVotes),
-                            backgroundColor: 'rgba(243, 156, 18, 0.7)',
-                            borderColor: 'rgba(243, 156, 18, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y} votes`;
-                                }
-                            }
-                        }
+        // --- SORT DATA FOR CHART (ENSURE CONSISTENCY) ---
+        // Explicitly sort the data for the chart to guarantee the order matches the backend sorting logic:
+        // Primary sort: Council Votes (descending), Secondary sort: Executive Votes (descending) for ties.
+        const sortedChartData = [...resultsArray]; // Create a copy to avoid modifying the original
+        sortedChartData.sort((a, b) => {
+            // Primary sort: Council Votes (descending)
+            if (b.councilVotes !== a.councilVotes) {
+                return b.councilVotes - a.councilVotes;
+            }
+            // Secondary sort: Executive Votes (descending) for ties in council votes
+            return b.executiveVotes - a.executiveVotes;
+        });
+        // --- END SORT ---
+
+        currentChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                // --- USE THE EXPLICITLY SORTED DATA ---
+                labels: sortedChartData.map(c => c.name),
+                datasets: [
+                    {
+                        label: 'Council Votes',
+                        data: sortedChartData.map(c => c.councilVotes),
+                        backgroundColor: 'rgba(0, 150, 87, 0.7)', // Green
+                        borderColor: 'rgba(0, 150, 87, 1)',
+                        borderWidth: 1
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Votes'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Candidates'
+                    {
+                        label: 'Executive Votes',
+                        data: sortedChartData.map(c => c.executiveVotes),
+                        backgroundColor: 'rgba(243, 156, 18, 0.7)', // Orange
+                        borderColor: 'rgba(243, 156, 18, 1)',
+                        borderWidth: 1
+                    }
+                ]
+                // --- END USE OF SORTED DATA ---
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y', // Makes it a horizontal bar chart
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.parsed.x} votes`; // x for horizontal
                             }
                         }
                     }
+                },
+                scales: {
+                    x: { // x-axis for horizontal bar chart
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Votes'
+                        }
+                    },
+                    y: { // y-axis for horizontal bar chart (candidate names)
+                        title: {
+                            display: true,
+                            text: 'Candidates'
+                        }
+                        // reverse: true // Optional: Uncomment to reverse the order if needed
+                    }
                 }
-            });
+            }
+        });
         }, 100);
     } catch (err) {
         console.error('Error fetching results:', err);
