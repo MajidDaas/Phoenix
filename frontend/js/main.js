@@ -23,7 +23,7 @@ const winnerInfoPopup = document.getElementById('winnerInfoPopup');
 
 // --- UI Functions ---
 
-// Initialize candidates for voting
+// Initialize candidates for voting (Simple cards for voting tab)
 function initCandidates() {
     candidateList.innerHTML = '';
     candidates.forEach(candidate => {
@@ -34,11 +34,7 @@ function initCandidates() {
         const card = document.createElement('div');
         card.className = 'candidate-item';
         card.dataset.id = candidate.id;
-        // Truncate bio for the main card display
-        const fullBio = candidate.bio || '';
-        const truncatedBio = truncateText(fullBio, 100); // Adjust 100 to desired length
-        const needsTruncation = fullBio.length > 100;
-
+        // --- Simplified Voting Card ---
         card.innerHTML = `
             <div class="candidate-info" data-id="${candidate.id}">
                 <i class="fas fa-info"></i>
@@ -48,41 +44,14 @@ function initCandidates() {
             <div class="candidate-name">${candidate.name}</div>
             <div class="candidate-position">${candidate.position}</div>
             <div class="activity-indicator ${activityClass}">${activityText}</div>
-            <div class="candidate-bio-short">
-                ${truncatedBio}
-                ${needsTruncation ? `<button class="expand-bio-btn" type="button">Read More</button>` : ''}
-            </div>
-            <div class="candidate-bio-full hidden">
-                ${fullBio}
-                <button class="collapse-bio-btn" type="button">Show Less</button>
-            </div>
-            <div class="candidate-details hidden" id="details-${candidate.id}">
+            <div class="candidate-details" id="details-${candidate.id}">
                 <div class="close-details" data-id="${candidate.id}">×</div>
                 <h4>${candidate.name}</h4>
-                <p>${fullBio}</p>
+                <p>${candidate.bio}</p>
                 <p><strong>Weekly Activity:</strong> ${candidate.activity} hours</p>
             </div>
         `;
-
-        // Add event listener for the "Read More" button within this card
-        const expandBtn = card.querySelector('.expand-bio-btn');
-        if (expandBtn) {
-            expandBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent triggering the main card click
-                card.querySelector('.candidate-bio-short').classList.add('hidden');
-                card.querySelector('.candidate-bio-full').classList.remove('hidden');
-            });
-        }
-
-        // Add event listener for the "Show Less" button within this card
-        const collapseBtn = card.querySelector('.collapse-bio-btn');
-        if (collapseBtn) {
-            collapseBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent triggering the main card click
-                card.querySelector('.candidate-bio-full').classList.add('hidden');
-                card.querySelector('.candidate-bio-short').classList.remove('hidden');
-            });
-        }
+        // --- End Simplified Voting Card ---
         card.addEventListener('click', (e) => {
             // Prevent triggering when clicking on info icon or close button
             if (e.target.closest('.candidate-info') || e.target.closest('.close-details')) {
@@ -111,7 +80,7 @@ function initCandidates() {
     });
 }
 
-// Show candidate details
+// Show candidate details (Popup for voting tab)
 function showCandidateDetails(id) {
     // Hide any currently active details
     if (activeDetails) {
@@ -124,7 +93,7 @@ function showCandidateDetails(id) {
     }
 }
 
-// Hide candidate details
+// Hide candidate details (Popup for voting tab)
 function hideCandidateDetails(id) {
     const details = document.getElementById(`details-${id}`);
     if (details) {
@@ -275,7 +244,7 @@ Executive Officers: ${executiveCandidates.length}`, 'success');
 }
 
 
-// Render results - Showing only Top 15 Council Members
+// Render results
 async function renderResults() {
     try {
         const resultsData = await ElectionAPI.getResults();
@@ -291,41 +260,20 @@ async function renderResults() {
                     <p><i class="fas fa-info-circle"></i> Results will be available after the election is closed.</p>
                 </div>
             `;
-            // Destroy existing chart if election reopens
-            if (currentChart) {
-                currentChart.destroy();
-                currentChart = null;
-            }
-            // Hide the pre-defined chart container if election is open
-            const chartContainerElement = document.getElementById('chartContainer');
-            if (chartContainerElement) {
-                chartContainerElement.classList.add('hidden');
-            }
             return;
         }
 
-        // Use results from backend (already sorted by council votes desc, then executive votes desc)
-        const fullResultsArray = resultsData.results;
-
-        // --- NEW: Get only the top 15 candidates based on Council Votes ---
-        const top15ResultsArray = fullResultsArray.slice(0, 15);
-        // --- END NEW ---
-
-        // --- MODIFIED: Identify executive officers within the TOP 15 ---
-        // Sort the TOP 15 by executive votes to find the top 7 EOs among them
-        const sortedTop15ByExecutiveVotes = [...top15ResultsArray].sort((a, b) => b.executiveVotes - a.executiveVotes);
-        const executiveOfficers = sortedTop15ByExecutiveVotes.slice(0, 7).map(c => c.name);
-        // --- END MODIFIED ---
+        // Use results from backend
+        const resultsArray = resultsData.results;
+        // Sort to identify executive officers (top 7 by executive votes)
+        const sortedByExecutiveVotes = [...resultsArray].sort((a, b) => b.executiveVotes - a.executiveVotes);
+        const executiveOfficers = sortedByExecutiveVotes.slice(0, 7).map(c => c.name);
 
         let resultsHTML = `<div class="results-container">`;
-
-        // --- MODIFIED: Loop only through the TOP 15 results ---
-        top15ResultsArray.forEach(candidate => {
-        // --- END MODIFIED ---
+        resultsArray.forEach(candidate => {
             // Find the full candidate object to get winner status and other details
             const fullCandidate = candidates.find(c => c.id === candidate.id);
             const isExecutive = executiveOfficers.includes(candidate.name);
-
             // Add data attribute for winner status and use winner-name class for styling and interaction
             const winnerClass = (fullCandidate && fullCandidate.isWinner) ? 'winner-name' : '';
             const winnerDataAttr = (fullCandidate && fullCandidate.isWinner) ? `data-is-winner="true"` : `data-is-winner="false"`;
@@ -344,16 +292,14 @@ async function renderResults() {
                     <div class="progress-container">
                         <div class="progress-label">Council Votes:</div>
                         <div class="progress-bar">
-                            <!-- Adjust width calculation based on the max council vote among the TOP 15 -->
-                            <div class="progress-fill" style="width: ${Math.min(100, (candidate.councilVotes / (top15ResultsArray[0]?.councilVotes || 1)) * 100)}%"></div>
+                            <div class="progress-fill" style="width: ${Math.min(100, (candidate.councilVotes / (resultsArray[0]?.councilVotes || 1)) * 100)}%"></div>
                         </div>
                         <div class="progress-value">${candidate.councilVotes.toLocaleString()}</div>
                     </div>
                     <div class="progress-container">
                         <div class="progress-label">Executive Votes:</div>
                         <div class="progress-bar">
-                            <!-- Adjust width calculation based on the max executive vote among the TOP 15 by exec votes -->
-                            <div class="progress-fill executive" style="width: ${Math.min(100, (candidate.executiveVotes / (sortedTop15ByExecutiveVotes[0]?.executiveVotes || 1)) * 100)}%"></div>
+                            <div class="progress-fill executive" style="width: ${Math.min(100, (candidate.executiveVotes / (sortedByExecutiveVotes[0]?.executiveVotes || 1)) * 100)}%"></div>
                         </div>
                         <div class="progress-value">${candidate.executiveVotes.toLocaleString()}</div>
                     </div>
@@ -361,135 +307,77 @@ async function renderResults() {
             `;
         });
         resultsHTML += `</div>`;
+        // Add chart container
+        resultsHTML += `
+            <div class="chart-container">
+                <h3><i class="fas fa-chart-bar"></i> Vote Distribution</h3>
+                <canvas id="resultsChart" width="400" height="200"></canvas>
+            </div>
+        `;
         resultsContent.innerHTML = resultsHTML;
 
-        // --- MODIFIED: Show the pre-defined chart container ---
-        const chartContainerElement = document.getElementById('chartContainer');
-        if (chartContainerElement) {
-            chartContainerElement.classList.remove('hidden');
-        }
-        // --- END MODIFIED ---
-
-        // --- MODIFIED: Create chart using only the TOP 15 data ---
-        // Use the explicitly sorted data for the chart to guarantee the order matches the backend sorting logic:
-        // Primary sort: Council Votes (descending), Secondary sort: Executive Votes (descending) for ties.
-        const sortedChartData = [...top15ResultsArray]; // Create a copy to avoid modifying the original slice
-        sortedChartData.sort((a, b) => {
-            // Primary sort: Council Votes (descending)
-            if (b.councilVotes !== a.councilVotes) {
-                return b.councilVotes - a.councilVotes;
-            }
-            // Secondary sort: Executive Votes (descending) for ties in council votes
-            return b.executiveVotes - a.executiveVotes;
-        });
-
-        // Create chart - Ensuring it's destroyed and recreated correctly
+        // Create chart
         setTimeout(() => {
             const ctx = document.getElementById('resultsChart').getContext('2d');
             if (currentChart) {
                 currentChart.destroy();
-                currentChart = null; // Ensure it's nulled after destruction
             }
-
             currentChart = new Chart(ctx, {
                 type: 'bar',
-                data:{
-                    // --- USE THE EXPLICITLY SORTED TOP 15 DATA ---
-                    labels: sortedChartData.map(c => c.name),
+                data: {
+                    labels: resultsArray.map(c => c.name),
                     datasets: [
                         {
                             label: 'Council Votes',
-                            data: sortedChartData.map(c => c.councilVotes),
-                            backgroundColor: 'rgba(0, 150, 87, 0.7)', // Green
+                            data: resultsArray.map(c => c.councilVotes),
+                            backgroundColor: 'rgba(0, 150, 87, 0.7)',
                             borderColor: 'rgba(0, 150, 87, 1)',
                             borderWidth: 1
                         },
                         {
                             label: 'Executive Votes',
-                             data: sortedChartData.map(c => c.executiveVotes),
-                            backgroundColor: 'rgba(243, 156, 18, 0.7)', // Orange
+                            data: resultsArray.map(c => c.executiveVotes),
+                            backgroundColor: 'rgba(243, 156, 18, 0.7)',
                             borderColor: 'rgba(243, 156, 18, 1)',
                             borderWidth: 1
                         }
                     ]
-                    // --- END USE OF SORTED DATA ---
                 },
                 options: {
-                    responsive: true,              // Crucial for responsiveness
-                    maintainAspectRatio: false,    // Allow height to be set by CSS/container
-                    indexAxis: 'y',                // Horizontal bar chart for better mobile label display
+                    responsive: true,
                     plugins: {
                         legend: {
                             position: 'top',
-                            labels: {
-                                // Improve legend readability on smaller screens
-                                font: {
-                                    size: window.innerWidth < 768 ? 10 : 12 // Smaller font on mobile
-                                }
-                            }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    // Adjust tooltip for horizontal chart (x-axis value)
-                                    return `${context.dataset.label}: ${context.parsed.x} votes`;
+                                    return `${context.dataset.label}: ${context.parsed.y} votes`;
                                 }
                             }
                         }
                     },
                     scales: {
-                        x: { // x-axis for horizontal bar chart (represents vote count)
+                        y: {
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Number of Votes',
-                                font: {
-                                    size: window.innerWidth < 768 ? 10 : 12
-                                }
-                            },
-                            ticks: {
-                                font: {
-                                    size: window.innerWidth < 768 ? 8 : 10
-                                }
+                                text: 'Number of Votes'
                             }
                         },
-                        y: { // y-axis for horizontal bar chart (represents candidate names)
+                        x: {
                             title: {
                                 display: true,
-                                text: 'Top 15 Council Members',
-                                font: {
-                                    size: window.innerWidth < 768 ? 10 : 12
-                                }
-                            },
-                            ticks: {
-                                font: {
-                                    size: window.innerWidth < 768 ? 8 : 10
-                                },
-                                // Auto-skip labels if they get too crowded, keep horizontal
-                                autoSkip: false, // Try not to skip names if possible
-                                maxRotation: 0,  // Keep labels horizontal
-                                minRotation: 0
+                                text: 'Candidates'
                             }
-                            // reverse: true // Optional: Uncomment to reverse the bar order if needed
                         }
                     }
                 }
             });
         }, 100);
-        // --- END MODIFIED CHART CREATION ---
     } catch (err) {
         console.error('Error fetching results:', err);
         resultsContent.innerHTML = `<div class="status-error"><p>Error loading results. Please try again later.</p></div>`;
-         // Destroy existing chart on error
-        if (currentChart) {
-            currentChart.destroy();
-            currentChart = null;
-        }
-        // Hide the chart container on error
-        const chartContainerElement = document.getElementById('chartContainer');
-        if (chartContainerElement) {
-            chartContainerElement.classList.add('hidden');
-        }
     }
 }
 
@@ -519,15 +407,11 @@ function showWinnerPopup(event) {
     winnerInfoPopup.style.top = `${rect.top + scrollTop - winnerInfoPopup.offsetHeight - 10}px`;
     // Show the popup
     winnerInfoPopup.style.display = 'block';
-    // Update ARIA attributes for accessibility
-    winnerInfoPopup.setAttribute('aria-hidden', 'false');
 }
 
 // Hide winner info popup (can be called by clicking outside or a close button if added)
 function hideWinnerPopup() {
     winnerInfoPopup.style.display = 'none';
-    // Update ARIA attributes for accessibility
-    winnerInfoPopup.setAttribute('aria-hidden', 'true');
 }
 // Add event listener to hide popup when clicking anywhere else
 document.addEventListener('click', function(event) {
@@ -801,17 +685,6 @@ const UIController = {
         if (tabName === 'results') {
             renderResults();
         }
-        // Specific actions for the admin tab
-        if (tabName === 'admin') {
-            // Focus the admin password input field when the admin tab is selected
-            const adminPasswordInput = document.getElementById('adminPassword');
-            if (adminPasswordInput) {
-                // Small delay to ensure the tab is fully rendered
-                setTimeout(() => {
-                    adminPasswordInput.focus();
-                }, 10);
-            }
-        }
         // Hide any active details when switching tabs
         if (activeDetails) {
             hideCandidateDetails(activeDetails);
@@ -853,7 +726,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // Admin button (top right corner)
+    // Admin button
     document.getElementById('adminBtn').addEventListener('click', () => {
         UIController.switchTab('admin');
     });
@@ -872,27 +745,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('exportVotesBtn').addEventListener('click', exportVotes);
     document.getElementById('backupToCloudBtn').addEventListener('click', backupToCloud);
 
-    // Allow pressing Enter in the admin password field to trigger authentication
-    const adminPasswordInput = document.getElementById('adminPassword');
-    if (adminPasswordInput) {
-        adminPasswordInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                authenticateAdmin();
-            }
-        });
-    }
-
     // Initialize the application for the vote tab
-    updateUI(); // Initial UI update
+    // initCandidates(); // Don't init candidates here, wait for step 3
+    updateUI();
+    // renderResults(); // Don't render results here, wait for results tab
 
+// ... (code inside DOMContentLoaded) ...
     // Add click outside listener for candidate details
     document.addEventListener('click', (e) => {
         if (activeDetails && !e.target.closest('.candidate-item')) {
             hideCandidateDetails(activeDetails);
         }
     });
-});
+    // --- END OF DOMContentLoaded CODE ---
+}); // <-- This is the closing bracket of DOMContentLoaded
 
 // --- NEW FUNCTION: Fetch Candidates from Backend ---
 /**
@@ -931,7 +797,7 @@ async function loadCandidates() {
         // These functions now use the populated `candidates` array
         initCandidates();
         updateUI(); // Update counters, button states based on (initially empty) selections
-        displayInfoCandidates(); // Populate the Info tab candidate list
+        displayInfoCandidates(); // Populate the Info tab candidate list // <-- ADD THIS LINE
 
     } catch (error) {
         // --- HANDLE ERRORS ---
@@ -944,13 +810,24 @@ async function loadCandidates() {
                 <p>Please try refreshing the page.</p>
             </div>
         `;
+        // Optionally disable voting if candidates can't be loaded
+        // const submitVoteBtn = document.getElementById('submitVoteBtn');
+        // if (submitVoteBtn) {
+        //     submitVoteBtn.disabled = true;
+        //     submitVoteBtn.title = "Cannot submit vote: Candidate data unavailable.";
+        // }
+
     } finally {
         // The loading indicator is replaced by either candidates or an error message,
         // so no specific cleanup is needed here for it in this structure.
     }
 }
 // --- END NEW FUNCTION ---
-// Populate the "Meet the Candidates" section in the Info tab
+
+// --- NEW FUNCTION: Populate Info Tab Candidates ---
+/**
+ * Populates the "Meet the Candidates" section in the Info tab with expandable cards.
+ */
 function displayInfoCandidates() {
     const infoCandidateListElement = document.getElementById('infoCandidateList');
     if (!infoCandidateListElement) {
@@ -967,58 +844,80 @@ function displayInfoCandidates() {
         return;
     }
 
-    // Loop through the loaded candidates array and create HTML elements
+    // Loop through the loaded candidates array and create expandable HTML elements for the Info tab
     candidates.forEach(candidate => {
-        const candidateElement = document.createElement('div');
-        candidateElement.className = 'candidate-item';
-        // Use the same structure as in initCandidates, but simplified for display only
-        // Truncate bio for the info tab display
-        const fullBio = candidate.bio || '';
-        const truncatedBio = truncateText(fullBio, 150); // Slightly longer preview in Info tab
-        const needsTruncation = fullBio.length > 150;
+        const infoCard = document.createElement('div');
+        infoCard.className = 'candidate-item info-candidate-item'; // Add a specific class for styling
+        infoCard.dataset.id = candidate.id; // Store ID
 
-        candidateElement.innerHTML = `
+        // Determine activity class and text
+        const activityClass = candidate.activity >= 14 ? 'activity-high' :
+                            candidate.activity >= 7 ? 'activity-medium' : 'activity-low';
+        const activityText = candidate.activity >= 14 ? 'High Activity' :
+                           candidate.activity >= 7 ? 'Medium Activity' : 'Low Activity';
+
+        // Create the initial collapsed view HTML
+        infoCard.innerHTML = `
             <img src="${candidate.photo}" alt="${candidate.name}" class="candidate-image"
                  onerror="this.src='https://via.placeholder.com/80x80/cccccc/666666?text=${candidate.name.charAt(0)}'">
             <div class="candidate-name">${candidate.name}</div>
             <div class="candidate-position">${candidate.position}</div>
-            <div class="candidate-bio-short-info">
-                ${truncatedBio}
-                ${needsTruncation ? `<button class="expand-bio-btn-info" type="button">Read More</button>` : ''}
+            <div class="activity-indicator ${activityClass}">${activityText}</div>
+            <div class="candidate-bio-preview">
+                <p>${candidate.bio.substring(0, 100)}${candidate.bio.length > 100 ? '...' : ''}</p>
+                ${candidate.bio.length > 100 ? '<button class="btn btn-outline expand-info-btn" type="button">View Full Profile</button>' : ''}
             </div>
-            <div class="candidate-bio-full-info hidden">
-                ${fullBio}
-                <button class="collapse-bio-btn-info" type="button">Show Less</button>
+            <div class="candidate-full-profile hidden">
+                 <p>${candidate.bio}</p>
+                 <p><strong>Weekly Activity:</strong> ${candidate.activity} hours</p>
+                 <!-- Add any other fields you want in the full profile -->
+                 <button class="btn collapse-info-btn" type="button">Collapse</button>
             </div>
         `;
 
-        // Add event listener for the "Read More" button within this info card
-        const expandBtnInfo = candidateElement.querySelector('.expand-bio-btn-info');
-        if (expandBtnInfo) {
-            expandBtnInfo.addEventListener('click', (e) => {
-                e.stopPropagation();
-                candidateElement.querySelector('.candidate-bio-short-info').classList.add('hidden');
-                candidateElement.querySelector('.candidate-bio-full-info').classList.remove('hidden');
+        // Add click listener to the card itself for expanding
+        infoCard.addEventListener('click', (e) => {
+             // Prevent triggering if clicking on buttons within the card
+             if (e.target.closest('.expand-info-btn') || e.target.closest('.collapse-info-btn')) {
+                 return;
+             }
+             const preview = infoCard.querySelector('.candidate-bio-preview');
+             const fullProfile = infoCard.querySelector('.candidate-full-profile');
+             if (preview && fullProfile) {
+                 preview.classList.add('hidden');
+                 fullProfile.classList.remove('hidden');
+             }
+        });
+
+        // Add specific listener for the "View Full Profile" button if it exists
+        const expandBtn = infoCard.querySelector('.expand-info-btn');
+        if (expandBtn) {
+            expandBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the main card click
+                const preview = infoCard.querySelector('.candidate-bio-preview');
+                const fullProfile = infoCard.querySelector('.candidate-full-profile');
+                if (preview && fullProfile) {
+                    preview.classList.add('hidden');
+                    fullProfile.classList.remove('hidden');
+                }
             });
         }
 
-        // Add event listener for the "Show Less" button within this info card
-        const collapseBtnInfo = candidateElement.querySelector('.collapse-bio-btn-info');
-        if (collapseBtnInfo) {
-            collapseBtnInfo.addEventListener('click', (e) => {
-                e.stopPropagation();
-                candidateElement.querySelector('.candidate-bio-full-info').classList.add('hidden');
-                candidateElement.querySelector('.candidate-bio-short-info').classList.remove('hidden');
-            });
+        // Add listener for the "Collapse" button
+        const collapseBtn = infoCard.querySelector('.collapse-info-btn');
+        if (collapseBtn) {
+             collapseBtn.addEventListener('click', (e) => {
+                 e.stopPropagation(); // Prevent triggering the main card click
+                 const preview = infoCard.querySelector('.candidate-bio-preview');
+                 const fullProfile = infoCard.querySelector('.candidate-full-profile');
+                 if (preview && fullProfile) {
+                     fullProfile.classList.add('hidden');
+                     preview.classList.remove('hidden');
+                 }
+             });
         }
-        infoCandidateListElement.appendChild(candidateElement);
+
+        infoCandidateListElement.appendChild(infoCard);
     });
 }
-// Helper function to truncate text
-function truncateText(text, maxLength = 100) {
-    if (text.length <= maxLength) {
-        return text;
-    }
-    // Truncate and add ellipsis
-    return text.substring(0, maxLength) + '...';
-}
+// --- END NEW FUNCTION ---
