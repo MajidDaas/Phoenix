@@ -131,7 +131,7 @@ def create_app(config_name='default'):
 
             # --- Prepare response ---
             # Create a response object to handle file download
-            from flask import Response # Make sure Response is imported from flask
+            # from flask import Response # <-- REMOVE THIS LINE
             return Response(
                 csv_data,
                 mimetype='text/csv',
