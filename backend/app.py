@@ -1,5 +1,7 @@
 from flask import Flask, jsonify, request, send_from_directory, session, redirect, url_for
 from flask_cors import CORS
+import io
+import csv
 import os
 import uuid
 from config import config
@@ -88,7 +90,63 @@ def create_app(config_name='default'):
             app.logger.error(f"Unexpected error fetching candidates: {e}")
             return jsonify({"message": "An internal server error occurred while fetching candidates."}), 500
 
-    
+    # @desc    Export votes to CSV
+    # @route   GET /api/admin/export-csv
+    # @access  Admin (in real app, protected)
+    @app.route('/api/admin/export-csv', methods=['GET'])
+    def export_votes_to_csv():
+        try:
+            # --- Fetch data ---
+            # Use the existing utility functions from utils.data_handler
+            votes_data = get_votes()
+            candidates = get_candidates()
+
+            # --- Create candidate lookup dict ---
+            # Map candidate ID to candidate name for easy lookup
+            # Assuming Candidate objects have 'id' and 'name' attributes
+            candidate_lookup = {c.id: c.name for c in candidates}
+
+            # --- Generate CSV in memory ---
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Write CSV header
+            writer.writerow(['Voter ID', 'Candidate ID', 'Candidate Name', 'Vote Type'])
+
+            # Write vote data
+            # Assuming Vote objects have 'voter_id', 'selected_candidates', 'executive_candidates' attributes
+            for vote in votes_data.votes:
+                # Write Council Votes
+                for candidate_id in vote.selected_candidates:
+                    candidate_name = candidate_lookup.get(candidate_id, f"Unknown ID: {candidate_id}")
+                    writer.writerow([vote.voter_id, candidate_id, candidate_name, 'Council'])
+                # Write Executive Votes
+                for candidate_id in vote.executive_candidates:
+                    candidate_name = candidate_lookup.get(candidate_id, f"Unknown ID: {candidate_id}")
+                    writer.writerow([vote.voter_id, candidate_id, candidate_name, 'Executive'])
+
+            # Get the CSV string
+            csv_data = output.getvalue()
+            output.close()
+
+            # --- Prepare response ---
+            # Create a response object to handle file download
+            from flask import Response # Make sure Response is imported from flask
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={"Content-Disposition": "attachment;filename=votes_export.csv"}
+            )
+
+        except FileNotFoundError as e:
+            app.logger.error(f"Data file not found during CSV export: {e}")
+            # Return JSON error instead of CSV if file is missing
+            return jsonify({'message': 'Required data file not found for export.'}), 404
+        except Exception as err:
+            app.logger.error(f"Error exporting votes to CSV: {err}")
+            # Return JSON error instead of CSV for general errors
+            return jsonify({'message': 'An internal server error occurred during CSV export.'}), 500
+
     # @desc    Request a voter ID (simulated)
     # @route   POST /api/votes/request-id
     # @access  Public

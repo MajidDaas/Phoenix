@@ -14,7 +14,15 @@ class ElectionAPI {
         });
         return await response.json();
     }
-
+    static async exportVotesToCSV() {
+        // This function will primarily be called for its side effect (file download)
+        // Returning the fetch promise allows the caller to handle potential errors during the initial request.
+        return fetch(`${API_BASE_URL}/admin/export-csv`, {
+            method: 'GET',
+            // credentials: 'include' // Uncomment if you need to send cookies/session
+        });
+        // Note: We don't parse JSON here because the response is expected to be a CSV file blob.
+    }
     static async verifyVoterID(voterId) {
         const response = await fetch(`${API_BASE_URL}/votes/verify-id`, {
             method: 'POST',

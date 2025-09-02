@@ -752,7 +752,72 @@ async function backupToCloud() {
     showMessage('Data backed up to cloud successfully', 'success');
     // In a real app, this would make an API call to a backup service
 }
+// Export votes to CSV
+async function exportVotesToCSV() {
+    try {
+        // Show loading state if desired (optional for this action)
+        // const exportCSVBtn = document.getElementById('exportVotesToCSVBtn');
+        // const originalHTML = exportCSVBtn.innerHTML;
+        // exportCSVBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+        // exportCSVBtn.disabled = true;
 
+        const response = await ElectionAPI.exportVotesToCSV();
+
+        if (response.ok && response.headers.get('Content-Type')?.includes('text/csv')) {
+            // --- Handle the file download ---
+            // Get the filename from the Content-Disposition header if available
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'votes_export.csv'; // Default filename
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (filenameMatch.length === 2) {
+                    filename = filenameMatch[1];
+                }
+            }
+
+            // Convert the response body to a Blob
+            const blob = await response.blob();
+
+            // Create a temporary download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename; // Use the filename from the header
+
+            // Programmatically click the link to trigger the download
+            document.body.appendChild(link); // Required for Firefox
+            link.click();
+
+            // Clean up: remove the link and revoke the object URL
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            showMessage(`Votes exported successfully as ${filename}`, 'success');
+        } else {
+            // Handle cases where the response isn't a successful CSV download
+            // e.g., backend returned an error JSON message
+            let errorMessage = 'Failed to export votes to CSV.';
+            try {
+                // Try to parse error message from JSON response
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (parseErr) {
+                // If parsing fails, maybe it's plain text or unexpected format
+                console.warn('Could not parse error response from CSV export:', parseErr);
+            }
+            throw new Error(errorMessage);
+        }
+    } catch (err) {
+        console.error('Error exporting votes to CSV:', err);
+        showMessage(`Error exporting votes to CSV: ${err.message}`, 'error');
+    } finally {
+        // Restore button state if loading indicator was used
+        // if (exportCSVBtn) {
+        //     exportCSVBtn.disabled = false;
+        //     exportCSVBtn.innerHTML = originalHTML;
+        // }
+    }
+}
 
 // --- Utility Functions ---
 
@@ -850,6 +915,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('electionToggle').addEventListener('click', toggleElection);
     document.getElementById('refreshDataBtn').addEventListener('click', refreshData);
     document.getElementById('exportVotesBtn').addEventListener('click', exportVotes);
+    document.getElementById('exportVotesToCSVBtn').addEventListener('click', exportVotesToCSV);
     document.getElementById('backupToCloudBtn').addEventListener('click', backupToCloud);
 
     // Allow pressing Enter in the admin password field to trigger authentication
