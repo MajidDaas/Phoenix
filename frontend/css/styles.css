@@ -388,6 +388,7 @@ body {
     border-radius: 8px; /* Rounded corners */
     padding: 20px; /* Internal padding */
     text-align: center; /* Center content */
+    display: none; /* Remove This */
 }
 
 /* Style the note below the Google button */
