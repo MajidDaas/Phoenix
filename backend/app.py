@@ -1,3 +1,5 @@
+# app.py - Main Flask application
+
 from flask import Flask, jsonify, request, send_from_directory, session, redirect, url_for, Response
 from flask_cors import CORS
 import io
@@ -13,10 +15,10 @@ def create_app(config_name='default'):
     app = Flask(__name__, static_folder='../frontend')
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
-    
+
     # Enable CORS for development
-    CORS(app, origins=['https://majiddaas2.pythonanywhere.com', 'http://127.0.0.1:5001'], supports_credentials=True)
-    
+    CORS(app, origins=['https://majiddaas2.pythonanywhere.com  ', 'http://127.0.0.1:5001'], supports_credentials=True)
+
     # Initialize Google OAuth2 and voter session management
     google_auth = GoogleAuth(
         client_id=app.config['GOOGLE_CLIENT_ID'],
@@ -43,7 +45,7 @@ def create_app(config_name='default'):
     @app.route('/js/<path:filename>')
     def serve_js(filename):
         return send_from_directory(os.path.join(app.static_folder, 'js'), filename)
-        
+
     # @desc    Get all candidates
     # @route   GET /api/candidates
     # @access  Public
@@ -90,62 +92,6 @@ def create_app(config_name='default'):
             app.logger.error(f"Unexpected error fetching candidates: {e}")
             return jsonify({"message": "An internal server error occurred while fetching candidates."}), 500
 
-    # @desc    Export votes to CSV
-    # @route   GET /api/admin/export-csv
-    # @access  Admin (in real app, protected)
-    @app.route('/api/admin/export-csv', methods=['GET'])
-    def export_votes_to_csv():
-        try:
-            # --- Fetch data ---
-            # Use the existing utility functions from utils.data_handler
-            votes_data = get_votes()
-            candidates = get_candidates()
-
-            # --- Create candidate lookup dict ---
-            # Map candidate ID to candidate name for easy lookup
-            # Assuming Candidate objects have 'id' and 'name' attributes
-            candidate_lookup = {c.id: c.name for c in candidates}
-
-            # --- Generate CSV in memory ---
-            output = io.StringIO()
-            writer = csv.writer(output)
-
-            # Write CSV header
-            writer.writerow(['Voter ID', 'Candidate ID', 'Candidate Name', 'Vote Type'])
-
-            # Write vote data
-            # Assuming Vote objects have 'voter_id', 'selected_candidates', 'executive_candidates' attributes
-            for vote in votes_data.votes:
-                # Write Council Votes
-                for candidate_id in vote.selected_candidates:
-                    candidate_name = candidate_lookup.get(candidate_id, f"Unknown ID: {candidate_id}")
-                    writer.writerow([vote.voter_id, candidate_id, candidate_name, 'Council'])
-                # Write Executive Votes
-                for candidate_id in vote.executive_candidates:
-                    candidate_name = candidate_lookup.get(candidate_id, f"Unknown ID: {candidate_id}")
-                    writer.writerow([vote.voter_id, candidate_id, candidate_name, 'Executive'])
-
-            # Get the CSV string
-            csv_data = output.getvalue()
-            output.close()
-
-            # --- Prepare response ---
-            # Create a response object to handle file download
-            # from flask import Response # <-- REMOVE THIS LINE
-            return Response(
-                csv_data,
-                mimetype='text/csv',
-                headers={"Content-Disposition": "attachment;filename=votes_export.csv"}
-            )
-
-        except FileNotFoundError as e:
-            app.logger.error(f"Data file not found during CSV export: {e}")
-            # Return JSON error instead of CSV if file is missing
-            return jsonify({'message': 'Required data file not found for export.'}), 404
-        except Exception as err:
-            app.logger.error(f"Error exporting votes to CSV: {err}")
-            # Return JSON error instead of CSV for general errors
-            return jsonify({'message': 'An internal server error occurred during CSV export.'}), 500
 
     # @desc    Request a voter ID (simulated)
     # @route   POST /api/votes/request-id
@@ -216,12 +162,12 @@ def create_app(config_name='default'):
         # Check authentication
         session_id = session.get('voter_session_id')
         voter_info = None
-        
+
         if session_id:
             voter_info = voter_session.get_session(session_id)
             if not voter_info:
                 return jsonify({'message': 'Invalid session'}), 401
-            
+
             if voter_info['has_voted']:
                 return jsonify({'message': 'You have already voted'}), 400
         else:
@@ -318,7 +264,7 @@ def create_app(config_name='default'):
         # Convert to array and sort
         results_array = list(results.values())
         results_array.sort(key=lambda x: (x['councilVotes'], x['executiveVotes']), reverse=True) # Sort by council votes, then executive votes
-        
+
         return jsonify({
             'isOpen': False,
             'results': results_array,
@@ -398,7 +344,7 @@ def create_app(config_name='default'):
     def google_login():
         try:
             # Check if Google OAuth2 is properly configured
-            if (app.config['GOOGLE_CLIENT_ID'] == 'your-google-client-id' or 
+            if (app.config['GOOGLE_CLIENT_ID'] == 'your-google-client-id' or
                 app.config['GOOGLE_CLIENT_SECRET'] == 'your-google-client-secret' or
                 'your-google-client-id' in app.config['GOOGLE_CLIENT_ID'] or
                 'your-google-client-secret' in app.config['GOOGLE_CLIENT_SECRET']):
@@ -406,10 +352,10 @@ def create_app(config_name='default'):
                     'message': 'Google OAuth2 is not configured. Please use Demo Mode or contact the administrator.',
                     'error': 'oauth_not_configured'
                 }), 500
-            
+
             # For demo purposes, if Google OAuth2 fails, suggest using demo mode
             # This will be caught by the frontend and show a helpful message
-            
+
             authorization_url, state = google_auth.get_authorization_url()
             session['oauth_state'] = state
             return redirect(authorization_url)
@@ -425,38 +371,38 @@ def create_app(config_name='default'):
         try:
             code = request.args.get('code')
             state = request.args.get('state')
-            
+
             if not code:
                 return jsonify({'message': 'Authorization code not received'}), 400
-            
+
             # Exchange code for tokens
             tokens = google_auth.exchange_code_for_tokens(code)
             if not tokens:
                 return jsonify({'message': 'Failed to exchange authorization code'}), 400
-            
+
             # Verify ID token
             user_info = google_auth.verify_id_token(tokens['id_token'])
             if not user_info:
                 return jsonify({'message': 'Failed to verify user identity'}), 400
-            
+
             # Check if user has already voted
             if voter_session.has_voted(user_info['user_id']):
                 return jsonify({'message': 'You have already voted in this election'}), 400
-            
+
             # Create voter session
             session_id = voter_session.create_session(
                 user_info['user_id'],
                 user_info['email'],
                 user_info['name']
             )
-            
+
             # Store session ID in Flask session
             session['voter_session_id'] = session_id
             session['user_info'] = user_info
-            
+
             # Redirect to voting page
             return redirect('/?authenticated=true')
-            
+
         except Exception as e:
             app.logger.error(f"Google callback error: {e}")
             return jsonify({'message': 'Authentication error'}), 500
@@ -469,11 +415,11 @@ def create_app(config_name='default'):
         session_id = session.get('voter_session_id')
         if not session_id:
             return jsonify({'message': 'Not authenticated'}), 401
-        
+
         voter_info = voter_session.get_session(session_id)
         if not voter_info:
             return jsonify({'message': 'Invalid session'}), 401
-        
+
         return jsonify({
             'authenticated': True,
             'user': {
@@ -505,7 +451,7 @@ def create_app(config_name='default'):
                 'demo@example.com',
                 'Demo User'
             )
-            
+
             # Store session ID in Flask session
             session['voter_session_id'] = session_id
             session['user_info'] = {
@@ -513,7 +459,7 @@ def create_app(config_name='default'):
                 'email': 'demo@example.com',
                 'name': 'Demo User'
             }
-            
+
             return jsonify({
                 'message': 'Demo mode activated successfully',
                 'user': {
@@ -525,8 +471,70 @@ def create_app(config_name='default'):
             app.logger.error(f"Demo auth error: {e}")
             return jsonify({'message': 'Demo authentication failed'}), 500
 
+    # --- NEW ROUTE: Export votes to CSV ---
+    # @desc    Export votes to CSV
+    # @route   GET /api/admin/export-csv
+    # @access  Admin (in real app, protected)
+    # --- Moved to the end for better scope management ---
+    @app.route('/api/admin/export-csv', methods=['GET'])
+    def export_votes_to_csv():
+        try:
+            # --- Fetch data ---
+            # Use the existing utility functions from utils.data_handler
+            votes_data = get_votes()
+            candidates = get_candidates()
+
+            # --- Create candidate lookup dict ---
+            # Map candidate ID to candidate name for easy lookup
+            # Assuming Candidate objects have 'id' and 'name' attributes
+            candidate_lookup = {c.id: c.name for c in candidates}
+
+            # --- Generate CSV in memory ---
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Write CSV header
+            writer.writerow(['Voter ID', 'Candidate ID', 'Candidate Name', 'Vote Type'])
+
+            # Write vote data
+            # Assuming Vote objects have 'voter_id', 'selected_candidates', 'executive_candidates' attributes
+            for vote in votes_data.votes:
+                # Write Council Votes
+                for candidate_id in vote.selected_candidates:
+                    candidate_name = candidate_lookup.get(candidate_id, f"Unknown ID: {candidate_id}")
+                    writer.writerow([vote.voter_id, candidate_id, candidate_name, 'Council'])
+                # Write Executive Votes
+                for candidate_id in vote.executive_candidates:
+                    candidate_name = candidate_lookup.get(candidate_id, f"Unknown ID: {candidate_id}")
+                    writer.writerow([vote.voter_id, candidate_id, candidate_name, 'Executive'])
+
+            # Get the CSV string
+            csv_data = output.getvalue()
+            output.close()
+
+            # --- Prepare response ---
+            # Create a response object to handle file download
+            # from flask import Response # <-- Removed redundant import
+            return Response(
+                csv_data,
+                mimetype='text/csv',
+                headers={"Content-Disposition": "attachment;filename=votes_export.csv"}
+            )
+
+        except FileNotFoundError as e:
+            app.logger.error(f"Data file not found during CSV export: {e}")
+            # Return JSON error instead of CSV if file is missing
+            return jsonify({'message': 'Required data file not found for export.'}), 404
+        except Exception as err:
+            app.logger.error(f"Error exporting votes to CSV: {err}")
+            # Return JSON error instead of CSV for general errors
+            return jsonify({'message': 'An internal server error occurred during CSV export.'}), 500
+    # --- END NEW ROUTE ---
+
+    # --- THE FINAL LINE OF THE FUNCTION ---
     return app
 
 if __name__ == '__main__':
     app = create_app('development')
     app.run(debug=True, port=5000)
+
