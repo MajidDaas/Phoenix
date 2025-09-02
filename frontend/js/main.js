@@ -323,11 +323,13 @@ async function renderResults() {
             `;
         });
         resultsHTML += `</div>`;
-        // Add chart container
+        // Add chart container - Adjusted for responsiveness
         resultsHTML += `
             <div class="chart-container">
                 <h3><i class="fas fa-chart-bar"></i> Vote Distribution (Top 15 Council Members)</h3>
-                <canvas id="resultsChart" width="400" height="400"></canvas> <!-- Increased height for better mobile display -->
+                <div style="position: relative; height: 60vh; max-height: 600px;"> <!-- Responsive container -->
+                     <canvas id="resultsChart"></canvas> <!-- Removed fixed width/height -->
+                </div>
             </div>
         `;
         resultsContent.innerHTML = resultsHTML;
