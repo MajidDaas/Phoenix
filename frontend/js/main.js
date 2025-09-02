@@ -425,35 +425,32 @@ document.addEventListener('click', function(event) {
 // Request voter ID
 // Google OAuth2 Authentication
 async function signInWithGoogle() {
-    // Show loading state
-    document.getElementById('googleSigninBtn').disabled = true;
-    document.getElementById('authLoading').classList.remove('hidden');
-
     try {
-        // Check if Google OAuth2 is properly configured
-        const response = await fetch('/auth/google/login');
-        if (response.status === 500) {
-            throw new Error('Google OAuth2 not configured');
-        }
-
-        // If we get here, Google OAuth2 is configured but may have issues
-        // For now, let's suggest using demo mode
-        showMessage('Google OAuth2 is experiencing issues. Please use Demo Mode for testing.', 'error');
-
+        // --- CHANGE: Redirect the browser window instead of using fetch ---
+        // This avoids the CORS issue encountered with fetch + redirect
+        window.location.href = '/auth/google/login';
+        // --- END CHANGE ---
     } catch (err) {
-        console.error('Error initiating Google sign-in:', err);
-        if (err.message === 'Google OAuth2 not configured') {
-            showMessage('Google OAuth2 is not configured. Please use Demo Mode or contact the administrator.', 'error');
-        } else {
-            showMessage('Google OAuth2 is experiencing issues. Please use Demo Mode for testing.', 'error');
-        }
-    } finally {
-        // Hide loading state
-        document.getElementById('googleSigninBtn').disabled = false;
-        document.getElementById('authLoading').classList.add('hidden');
+        console.error('Error initiating Google sign-in redirect:', err);
+        // Provide a user-friendly message
+        showMessage('An error occurred while redirecting to Google. Please try again or use Demo Mode.', 'error');
     }
-}
+    // Note: Because we redirect, code after window.location.href might not run
+    // depending on how quickly the redirect happens. The loading state logic
+    // below is kept for potential asynchronous pre-checks, but the redirect itself
+    // will stop further JS execution on this page.
 
+    // Show loading state *before* redirect attempt (optional, might be very brief)
+    const googleSigninBtn = document.getElementById('googleSigninBtn');
+    const authLoading = document.getElementById('authLoading');
+    if (googleSigninBtn && authLoading) {
+         googleSigninBtn.disabled = true;
+         authLoading.classList.remove('hidden');
+    }
+
+    // The redirect happens above. The 'finally' block from fetch is not applicable here
+    // in the same way, as the page unloads. If the redirect fails, the catch block handles it.
+}
 // Demo authentication (skip Google OAuth2)
 async function demoAuth() {
     try {
