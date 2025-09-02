@@ -41,7 +41,54 @@ def create_app(config_name='default'):
     @app.route('/js/<path:filename>')
     def serve_js(filename):
         return send_from_directory(os.path.join(app.static_folder, 'js'), filename)
+        
+    # @desc    Get all candidates
+    # @route   GET /api/candidates
+    # @access  Public
+    @app.route('/api/candidates', methods=['GET'])
+    def get_all_candidates():
+        """
+        API endpoint to get all candidates.
+        Reads data from backend/data/candidates.json and returns it as JSON.
+        """
+        try:
+            # --- Construct the path to the candidates.json file ---
+            # Assumes this file (app.py) is in the backend/ directory
+            # and data/ is a subdirectory of backend/
+            import os  # Ensure os is imported
+            backend_dir = os.path.dirname(os.path.abspath(__file__))
+            data_dir = os.path.join(backend_dir, 'data')
+            candidates_file_path = os.path.join(data_dir, 'candidates.json')
 
+            # --- Check if the file exists ---
+            if not os.path.exists(candidates_file_path):
+                app.logger.error(f"Candidates file not found at {candidates_file_path}")
+                return jsonify({"message": "Candidates data file not found on server."}), 404
+
+            # --- Read the JSON data from the file ---
+            import json  # Ensure json is imported
+            with open(candidates_file_path, 'r') as f:
+                candidates_data = json.load(f)
+
+            # --- Validate data format (basic check) ---
+            if not isinstance(candidates_data, list):
+                app.logger.error("Candidates data is not in the expected list format.")
+                return jsonify({"message": "Invalid candidates data format on server."}), 500
+
+            # --- Return the data as a JSON response ---
+            # 200 OK is the default status code
+            return jsonify(candidates_data)
+
+        except json.JSONDecodeError as e:
+            # Handle case where the JSON file is malformed
+            app.logger.error(f"Error decoding JSON from candidates file: {e}")
+            return jsonify({"message": "Error reading candidates data. Invalid JSON format in file."}), 500
+        except Exception as e:
+            # Handle any other unexpected errors (e.g., permissions)
+            app.logger.error(f"Unexpected error fetching candidates: {e}")
+            return jsonify({"message": "An internal server error occurred while fetching candidates."}), 500
+
+    
     # @desc    Request a voter ID (simulated)
     # @route   POST /api/votes/request-id
     # @access  Public
