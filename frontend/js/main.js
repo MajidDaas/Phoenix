@@ -360,7 +360,7 @@ async function renderResults() {
 
             currentChart = new Chart(ctx, {
                 type: 'bar',
-            }
+                data:{
                     // --- USE THE EXPLICITLY SORTED TOP 15 DATA ---
                     labels: sortedChartData.map(c => c.name),
                     datasets: [
