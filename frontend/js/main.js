@@ -949,3 +949,11 @@ function displayInfoCandidates() {
         infoCandidateListElement.appendChild(candidateElement);
     });
 }
+// Helper function to truncate text
+function truncateText(text, maxLength = 100) {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    // Truncate and add ellipsis
+    return text.substring(0, maxLength) + '...';
+}
