@@ -263,6 +263,11 @@ async function renderResults() {
                 currentChart.destroy();
                 currentChart = null;
             }
+            // Hide the pre-defined chart container if election is open
+            const chartContainerElement = document.getElementById('chartContainer');
+            if (chartContainerElement) {
+                chartContainerElement.classList.add('hidden');
+            }
             return;
         }
 
@@ -323,16 +328,14 @@ async function renderResults() {
             `;
         });
         resultsHTML += `</div>`;
-        // Add chart container - Adjusted for responsiveness
-        resultsHTML += `
-            <div class="chart-container">
-                <h3><i class="fas fa-chart-bar"></i> Vote Distribution (Top 15 Council Members)</h3>
-                <div style="position: relative; height: 60vh; max-height: 600px;"> <!-- Responsive container -->
-                     <canvas id="resultsChart"></canvas> <!-- Removed fixed width/height -->
-                </div>
-            </div>
-        `;
         resultsContent.innerHTML = resultsHTML;
+
+        // --- MODIFIED: Show the pre-defined chart container ---
+        const chartContainerElement = document.getElementById('chartContainer');
+        if (chartContainerElement) {
+            chartContainerElement.classList.remove('hidden');
+        }
+        // --- END MODIFIED ---
 
         // --- MODIFIED: Create chart using only the TOP 15 data ---
         // Use the explicitly sorted data for the chart to guarantee the order matches the backend sorting logic:
@@ -357,7 +360,7 @@ async function renderResults() {
 
             currentChart = new Chart(ctx, {
                 type: 'bar',
-                data: {
+                 {
                     // --- USE THE EXPLICITLY SORTED TOP 15 DATA ---
                     labels: sortedChartData.map(c => c.name),
                     datasets: [
@@ -370,7 +373,7 @@ async function renderResults() {
                         },
                         {
                             label: 'Executive Votes',
-                            data: sortedChartData.map(c => c.executiveVotes),
+                             sortedChartData.map(c => c.executiveVotes),
                             backgroundColor: 'rgba(243, 156, 18, 0.7)', // Orange
                             borderColor: 'rgba(243, 156, 18, 1)',
                             borderWidth: 1
@@ -449,6 +452,11 @@ async function renderResults() {
             currentChart.destroy();
             currentChart = null;
         }
+        // Hide the chart container on error
+        const chartContainerElement = document.getElementById('chartContainer');
+        if (chartContainerElement) {
+            chartContainerElement.classList.add('hidden');
+        }
     }
 }
 
@@ -478,11 +486,15 @@ function showWinnerPopup(event) {
     winnerInfoPopup.style.top = `${rect.top + scrollTop - winnerInfoPopup.offsetHeight - 10}px`;
     // Show the popup
     winnerInfoPopup.style.display = 'block';
+    // Update ARIA attributes for accessibility
+    winnerInfoPopup.setAttribute('aria-hidden', 'false');
 }
 
 // Hide winner info popup (can be called by clicking outside or a close button if added)
 function hideWinnerPopup() {
     winnerInfoPopup.style.display = 'none';
+    // Update ARIA attributes for accessibility
+    winnerInfoPopup.setAttribute('aria-hidden', 'true');
 }
 // Add event listener to hide popup when clicking anywhere else
 document.addEventListener('click', function(event) {
@@ -808,7 +820,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // Admin button
+    // Admin button (top right corner)
     document.getElementById('adminBtn').addEventListener('click', () => {
         UIController.switchTab('admin');
     });
