@@ -346,11 +346,25 @@ async function renderResults() {
             return b.executiveVotes - a.executiveVotes;
         });
 
+        // --- MODIFIED: Create chart using only the TOP 15 data ---
+        // Use the explicitly sorted data for the chart to guarantee the order matches the backend sorting logic:
+        // Primary sort: Council Votes (descending), Secondary sort: Executive Votes (descending) for ties.
+        const sortedChartData = [...top15ResultsArray]; // Create a copy to avoid modifying the original slice
+        sortedChartData.sort((a, b) => {
+            // Primary sort: Council Votes (descending)
+            if (b.councilVotes !== a.councilVotes) {
+                return b.councilVotes - a.councilVotes;
+            }
+            // Secondary sort: Executive Votes (descending) for ties in council votes
+            return b.executiveVotes - a.executiveVotes;
+        });
+
         // Create chart - Ensuring it's destroyed and recreated correctly
         setTimeout(() => {
             const ctx = document.getElementById('resultsChart').getContext('2d');
             if (currentChart) {
                 currentChart.destroy();
+                currentChart = null; // Ensure it's nulled after destruction
             }
 
             currentChart = new Chart(ctx, {
@@ -377,61 +391,62 @@ async function renderResults() {
                     // --- END USE OF SORTED DATA ---
                 },
                 options: {
-                    responsive: true, // Make chart responsive
-                    maintainAspectRatio: false, // Allow height to be set
-                    indexAxis: 'y', // Makes it a horizontal bar chart
+                    responsive: true,              // Crucial for responsiveness
+                    maintainAspectRatio: false,    // Allow height to be set by CSS/container
+                    indexAxis: 'y',                // Horizontal bar chart for better mobile label display
                     plugins: {
                         legend: {
                             position: 'top',
                             labels: {
                                 // Improve legend readability on smaller screens
                                 font: {
-                                    size: 12
+                                    size: window.innerWidth < 768 ? 10 : 12 // Smaller font on mobile
                                 }
                             }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.x} votes`; // x for horizontal
+                                    // Adjust tooltip for horizontal chart (x-axis value)
+                                    return `${context.dataset.label}: ${context.parsed.x} votes`;
                                 }
                             }
                         }
                     },
                     scales: {
-                        x: { // x-axis for horizontal bar chart
+                        x: { // x-axis for horizontal bar chart (represents vote count)
                             beginAtZero: true,
                             title: {
                                 display: true,
                                 text: 'Number of Votes',
                                 font: {
-                                    size: 12 // Smaller font for axis title
+                                    size: window.innerWidth < 768 ? 10 : 12
                                 }
                             },
                             ticks: {
                                 font: {
-                                    size: 10 // Smaller font for ticks
+                                    size: window.innerWidth < 768 ? 8 : 10
                                 }
                             }
                         },
-                        y: { // y-axis for horizontal bar chart (candidate names)
+                        y: { // y-axis for horizontal bar chart (represents candidate names)
                             title: {
                                 display: true,
                                 text: 'Top 15 Council Members',
                                 font: {
-                                    size: 12 // Smaller font for axis title
+                                    size: window.innerWidth < 768 ? 10 : 12
                                 }
                             },
                             ticks: {
                                 font: {
-                                    size: 10 // Smaller font for candidate names
+                                    size: window.innerWidth < 768 ? 8 : 10
                                 },
-                                // Auto-skip labels if they get too crowded
-                                autoSkip: false,
-                                maxRotation: 0, // Keep labels horizontal
+                                // Auto-skip labels if they get too crowded, keep horizontal
+                                autoSkip: false, // Try not to skip names if possible
+                                maxRotation: 0,  // Keep labels horizontal
                                 minRotation: 0
                             }
-                            // reverse: true // Optional: Uncomment to reverse the order if needed
+                            // reverse: true // Optional: Uncomment to reverse the bar order if needed
                         }
                     }
                 }
