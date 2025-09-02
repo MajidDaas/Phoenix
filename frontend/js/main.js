@@ -373,7 +373,7 @@ async function renderResults() {
                         },
                         {
                             label: 'Executive Votes',
-                             sortedChartData.map(c => c.executiveVotes),
+                             data: sortedChartData.map(c => c.executiveVotes),
                             backgroundColor: 'rgba(243, 156, 18, 0.7)', // Orange
                             borderColor: 'rgba(243, 156, 18, 1)',
                             borderWidth: 1
