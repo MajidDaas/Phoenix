@@ -686,6 +686,17 @@ const UIController = {
         if (tabName === 'results') {
             renderResults();
         }
+        // Specific actions for the admin tab
+        if (tabName === 'admin') {
+            // Focus the admin password input field when the admin tab is selected
+            const adminPasswordInput = document.getElementById('adminPassword');
+            if (adminPasswordInput) {
+                // Small delay to ensure the tab is fully rendered
+                setTimeout(() => {
+                    adminPasswordInput.focus();
+                }, 10);
+            }
+        }
         // Hide any active details when switching tabs
         if (activeDetails) {
             hideCandidateDetails(activeDetails);
@@ -746,6 +757,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('exportVotesBtn').addEventListener('click', exportVotes);
     document.getElementById('backupToCloudBtn').addEventListener('click', backupToCloud);
 
+
+    const adminPasswordInput = document.getElementById('adminPassword');
+    if (adminPasswordInput) {
+        adminPasswordInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                authenticateAdmin();
+            }
+        });
+    }
     // Initialize the application for the vote tab
     // initCandidates(); // Don't init candidates here, wait for step 3
     updateUI();
