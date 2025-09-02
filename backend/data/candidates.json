@@ -145,10 +145,194 @@
   },
   {
     "id": 19,
-    "name": "Saryt Johnson",
-    "position": "Community Advocate",
-    "photo": "https://randomuser.me/api/portraits/women/44.jpg",
-    "activity": 30,
-    "bio": "20 years of experience in community development and social programs. Focuses on inclusive growth and social equity."
+    "name": "Patricia Scott",
+    "position": "Fiscal Policy",
+    "photo": "https://randomuser.me/api/portraits/women/23.jpg",
+    "activity": 18,
+    "bio": "Certified Public Accountant with 20 years of experience. Focuses on transparent budgeting and responsible fiscal management."
+  },
+  {
+    "id": 20,
+    "name": "James Moore",
+    "position": "Veterans Affairs",
+    "photo": "https://randomuser.me/api/portraits/men/45.jpg",
+    "activity": 7,
+    "bio": "Retired Army officer. Advocates for veteran support services, job placement, and mental health resources."
+  },
+  {
+    "id": 21,
+    "name": "Olivia Green",
+    "position": "Parks & Natural Resources",
+    "photo": "https://randomuser.me/api/portraits/women/56.jpg",
+    "activity": 14,
+    "bio": "Horticulturist and conservationist. Leads initiatives for park maintenance, urban greening, and wildlife preservation."
+  },
+  {
+    "id": 22,
+    "name": "Andrew Hill",
+    "position": "Digital Security",
+    "photo": "https://randomuser.me/api/portraits/men/77.jpg",
+    "activity": 10,
+    "bio": "Cybersecurity analyst. Focuses on protecting city data and promoting cyber safety awareness for residents."
+  },
+  {
+    "id": 23,
+    "name": "Sophia King",
+    "position": "Immigrant Affairs",
+    "photo": "https://randomuser.me/api/portraits/women/2.jpg",
+    "activity": 9,
+    "bio": "Former diplomat and non-profit director. Advocates for immigrant integration, language access, and cultural bridges."
+  },
+  {
+    "id": 24,
+    "name": "William Wright",
+    "position": "Historic Preservation",
+    "photo": "https://randomuser.me/api/portraits/men/86.jpg",
+    "activity": 5,
+    "bio": "Historian and architect. Dedicated to preserving historical landmarks and promoting heritage tourism."
+  },
+  {
+    "id": 25,
+    "name": "Isabella Adams",
+    "position": "Food Security",
+    "photo": "https://randomuser.me/api/portraits/women/88.jpg",
+    "activity": 13,
+    "bio": "Agricultural scientist. Leads programs for urban farming, farmers' markets, and combating food deserts."
+  },
+  {
+    "id": 26,
+    "name": "Ethan Nelson",
+    "position": "Civic Technology",
+    "photo": "https://randomuser.me/api/portraits/men/5.jpg",
+    "activity": 16,
+    "bio": "Software developer. Focuses on improving government services through technology and open data initiatives."
+  },
+  {
+    "id": 27,
+    "name": "Mia Roberts",
+    "position": "Early Childhood",
+    "photo": "https://randomuser.me/api/portraits/women/17.jpg",
+    "activity": 8,
+    "bio": "Child psychologist. Advocates for universal pre-K, parental support programs, and early intervention services."
+  },
+  {
+    "id": 28,
+    "name": "Alexander Carter",
+    "position": "Emergency Management",
+    "photo": "https://randomuser.me/api/portraits/men/29.jpg",
+    "activity": 19,
+    "bio": "Former FEMA coordinator. Expert in disaster preparedness, response coordination, and community resilience planning."
+  },
+  {
+    "id": 29,
+    "name": "Charlotte Phillips",
+    "position": "Social Equity",
+    "photo": "https://randomuser.me/api/portraits/women/71.jpg",
+    "activity": 11,
+    "bio": "Human rights lawyer. Focuses on systemic inequality, fair housing, and criminal justice reform."
+  },
+  {
+    "id": 30,
+    "name": "Benjamin Evans",
+    "position": "Transit-Oriented Development",
+    "photo": "https://randomuser.me/api/portraits/men/37.jpg",
+    "activity": 12,
+    "bio": "Urban designer. Promotes dense, mixed-use development around transit hubs to reduce congestion and create vibrant communities."
+  },
+  {
+    "id": 31,
+    "name": "Abigail Turner",
+    "position": "Public Health",
+    "photo": "https://randomuser.me/api/portraits/women/9.jpg",
+    "activity": 15,
+    "bio": "Epidemiologist. Focuses on disease prevention, health education, and building a robust public health infrastructure."
+  },
+  {
+    "id": 32,
+    "name": "Joshua White",
+    "position": "Workforce Training",
+    "photo": "https://randomuser.me/api/portraits/men/60.jpg",
+    "activity": 10,
+    "bio": "Director of a technical college. Creates partnerships between industry and education for skilled job training."
+  },
+  {
+    "id": 33,
+    "name": "Evelyn Baker",
+    "position": "Neighborhood Revitalization",
+    "photo": "https://randomuser.me/api/portraits/women/82.jpg",
+    "activity": 7,
+    "bio": "Community organizer. Leads efforts for blight reduction, home repair programs, and main street revitalization."
+  },
+  {
+    "id": 34,
+    "name": "Samuel Gonzalez",
+    "position": "Civic Engagement",
+    "photo": "https://randomuser.me/api/portraits/men/84.jpg",
+    "activity": 14,
+    "bio": "Founder of a voter engagement non-profit. Works to increase voter turnout and community participation in local government."
+  },
+  {
+    "id": 35,
+    "name": "Harper Edwards",
+    "position": "Animal Welfare",
+    "photo": "https://randomuser.me/api/portraits/women/47.jpg",
+    "activity": 6,
+    "bio": "Veterinarian. Advocates for shelter animal programs, low-cost spay/neuter services, and responsible pet ownership."
+  },
+  {
+    "id": 36,
+    "name": "Jackson Rivera",
+    "position": "Broadband Access",
+    "photo": "https://randomuser.me/api/portraits/men/13.jpg",
+    "activity": 17,
+    "bio": "Telecommunications engineer. Focuses on expanding high-speed internet access to underserved neighborhoods."
+  },
+  {
+    "id": 37,
+    "name": "Lily Collins",
+    "position": "Mental Health",
+    "photo": "https://randomuser.me/api/portraits/women/61.jpg",
+    "activity": 9,
+    "bio": "Licensed therapist. Promotes community mental health clinics, crisis intervention teams, and school-based counseling."
+  },
+  {
+    "id": 38,
+    "name": "David Mitchell",
+    "position": "Zoning & Planning",
+    "photo": "https://randomuser.me/api/portraits/men/48.jpg",
+    "activity": 20,
+    "bio": "Urban planner with expertise in land use law. Advocates for smart growth and balanced zoning reform."
+  },
+  {
+    "id": 39,
+    "name": "Sofia Patel",
+    "position": "International Relations",
+    "photo": "https://randomuser.me/api/portraits/women/75.jpg",
+    "activity": 8,
+    "bio": "Professor of International Affairs. Focuses on fostering sister city programs and attracting global business."
+  },
+  {
+    "id": 40,
+    "name": "Henry Campbell",
+    "position": "Small Business Liaison",
+    "photo": "https://randomuser.me/api/portraits/men/92.jpg",
+    "activity": 13,
+    "bio": "Former local business owner. Works to streamline permits, reduce red tape, and support entrepreneurial startups."
+  },
+  {
+    "id": 41,
+    "name": "Avery James",
+    "position": "LGBTQ+ Affairs",
+    "photo": "https://randomuser.me/api/portraits/women/36.jpg",
+    "activity": 11,
+    "bio": "Community leader and advocate. Focuses on equality initiatives, safe spaces, and inclusive city policies."
+  },
+  {
+    "id": 42,
+    "name": "Jack Foster",
+    "position": "Water Resources",
+    "photo": "https://randomuser.me/api/portraits/men/26.jpg",
+    "activity": 15,
+    "bio": "Environmental engineer. Expert in water conservation, infrastructure modernization, and watershed protection."
   }
 ]
