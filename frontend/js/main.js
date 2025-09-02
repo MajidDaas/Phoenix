@@ -34,6 +34,11 @@ function initCandidates() {
         const card = document.createElement('div');
         card.className = 'candidate-item';
         card.dataset.id = candidate.id;
+        // Truncate bio for the main card display
+        const fullBio = candidate.bio || '';
+        const truncatedBio = truncateText(fullBio, 100); // Adjust 100 to desired length
+        const needsTruncation = fullBio.length > 100;
+
         card.innerHTML = `
             <div class="candidate-info" data-id="${candidate.id}">
                 <i class="fas fa-info"></i>
@@ -43,13 +48,41 @@ function initCandidates() {
             <div class="candidate-name">${candidate.name}</div>
             <div class="candidate-position">${candidate.position}</div>
             <div class="activity-indicator ${activityClass}">${activityText}</div>
-            <div class="candidate-details" id="details-${candidate.id}">
+            <div class="candidate-bio-short">
+                ${truncatedBio}
+                ${needsTruncation ? `<button class="expand-bio-btn" type="button">Read More</button>` : ''}
+            </div>
+            <div class="candidate-bio-full hidden">
+                ${fullBio}
+                <button class="collapse-bio-btn" type="button">Show Less</button>
+            </div>
+            <div class="candidate-details hidden" id="details-${candidate.id}">
                 <div class="close-details" data-id="${candidate.id}">×</div>
                 <h4>${candidate.name}</h4>
-                <p>${candidate.bio}</p>
+                <p>${fullBio}</p>
                 <p><strong>Weekly Activity:</strong> ${candidate.activity} hours</p>
             </div>
         `;
+
+        // Add event listener for the "Read More" button within this card
+        const expandBtn = card.querySelector('.expand-bio-btn');
+        if (expandBtn) {
+            expandBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the main card click
+                card.querySelector('.candidate-bio-short').classList.add('hidden');
+                card.querySelector('.candidate-bio-full').classList.remove('hidden');
+            });
+        }
+
+        // Add event listener for the "Show Less" button within this card
+        const collapseBtn = card.querySelector('.collapse-bio-btn');
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the main card click
+                card.querySelector('.candidate-bio-full').classList.add('hidden');
+                card.querySelector('.candidate-bio-short').classList.remove('hidden');
+            });
+        }
         card.addEventListener('click', (e) => {
             // Prevent triggering when clicking on info icon or close button
             if (e.target.closest('.candidate-info') || e.target.closest('.close-details')) {
@@ -939,13 +972,45 @@ function displayInfoCandidates() {
         const candidateElement = document.createElement('div');
         candidateElement.className = 'candidate-item';
         // Use the same structure as in initCandidates, but simplified for display only
+        // Truncate bio for the info tab display
+        const fullBio = candidate.bio || '';
+        const truncatedBio = truncateText(fullBio, 150); // Slightly longer preview in Info tab
+        const needsTruncation = fullBio.length > 150;
+
         candidateElement.innerHTML = `
             <img src="${candidate.photo}" alt="${candidate.name}" class="candidate-image"
                  onerror="this.src='https://via.placeholder.com/80x80/cccccc/666666?text=${candidate.name.charAt(0)}'">
             <div class="candidate-name">${candidate.name}</div>
             <div class="candidate-position">${candidate.position}</div>
-            <p>${candidate.bio}</p>
+            <div class="candidate-bio-short-info">
+                ${truncatedBio}
+                ${needsTruncation ? `<button class="expand-bio-btn-info" type="button">Read More</button>` : ''}
+            </div>
+            <div class="candidate-bio-full-info hidden">
+                ${fullBio}
+                <button class="collapse-bio-btn-info" type="button">Show Less</button>
+            </div>
         `;
+
+        // Add event listener for the "Read More" button within this info card
+        const expandBtnInfo = candidateElement.querySelector('.expand-bio-btn-info');
+        if (expandBtnInfo) {
+            expandBtnInfo.addEventListener('click', (e) => {
+                e.stopPropagation();
+                candidateElement.querySelector('.candidate-bio-short-info').classList.add('hidden');
+                candidateElement.querySelector('.candidate-bio-full-info').classList.remove('hidden');
+            });
+        }
+
+        // Add event listener for the "Show Less" button within this info card
+        const collapseBtnInfo = candidateElement.querySelector('.collapse-bio-btn-info');
+        if (collapseBtnInfo) {
+            collapseBtnInfo.addEventListener('click', (e) => {
+                e.stopPropagation();
+                candidateElement.querySelector('.candidate-bio-full-info').classList.add('hidden');
+                candidateElement.querySelector('.candidate-bio-short-info').classList.remove('hidden');
+            });
+        }
         infoCandidateListElement.appendChild(candidateElement);
     });
 }
