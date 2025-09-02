@@ -898,6 +898,7 @@ async function loadCandidates() {
         // These functions now use the populated `candidates` array
         initCandidates();
         updateUI(); // Update counters, button states based on (initially empty) selections
+        displayInfoCandidates(); // Populate the Info tab candidate list
 
     } catch (error) {
         // --- HANDLE ERRORS ---
@@ -916,3 +917,35 @@ async function loadCandidates() {
     }
 }
 // --- END NEW FUNCTION ---
+// Populate the "Meet the Candidates" section in the Info tab
+function displayInfoCandidates() {
+    const infoCandidateListElement = document.getElementById('infoCandidateList');
+    if (!infoCandidateListElement) {
+        console.warn("Info candidate list container (#infoCandidateList) not found.");
+        return;
+    }
+
+    // Clear any existing content
+    infoCandidateListElement.innerHTML = '';
+
+    // Check if candidates data is loaded
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+        infoCandidateListElement.innerHTML = '<p>Candidate information is not available yet.</p>';
+        return;
+    }
+
+    // Loop through the loaded candidates array and create HTML elements
+    candidates.forEach(candidate => {
+        const candidateElement = document.createElement('div');
+        candidateElement.className = 'candidate-item';
+        // Use the same structure as in initCandidates, but simplified for display only
+        candidateElement.innerHTML = `
+            <img src="${candidate.photo}" alt="${candidate.name}" class="candidate-image"
+                 onerror="this.src='https://via.placeholder.com/80x80/cccccc/666666?text=${candidate.name.charAt(0)}'">
+            <div class="candidate-name">${candidate.name}</div>
+            <div class="candidate-position">${candidate.position}</div>
+            <p>${candidate.bio}</p>
+        `;
+        infoCandidateListElement.appendChild(candidateElement);
+    });
+}
