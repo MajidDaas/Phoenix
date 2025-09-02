@@ -754,16 +754,17 @@ async function backupToCloud() {
 }
 // Export votes to CSV
 async function exportVotesToCSV() {
+    // Declare variables in function scope so they are accessible in try, catch, finally
+    const exportCSVBtn = document.getElementById('exportVotesToCSVBtn');
+    let originalHTML = '';
+
     try {
         // Show loading state if desired (optional for this action)
-        const exportCSVBtn = document.getElementById('exportVotesToCSVBtn');
-        let originalHTML = '';
         if (exportCSVBtn) {
             originalHTML = exportCSVBtn.innerHTML;
             exportCSVBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
             exportCSVBtn.disabled = true;
         }
-
         const response = await ElectionAPI.exportVotesToCSV();
 
         if (response.ok) {
