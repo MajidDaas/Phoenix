@@ -472,7 +472,7 @@ def create_app(config_name='default'):
             return jsonify({'message': 'Demo authentication failed'}), 500
 
     # --- NEW ROUTE: Export votes to CSV ---
-    # @desc    Export votes to CSV (Updated Format)
+    # @desc    Export votes to CSV (Updated Format with Names)
     # @route   GET /api/admin/export-csv
     # @access  Admin (in real app, protected)
     # --- Moved to the end for better scope management ---
@@ -484,38 +484,42 @@ def create_app(config_name='default'):
             votes_data = get_votes()
             candidates = get_candidates()
 
+            # --- Create candidate lookup dict ---
+            # Map candidate ID to candidate name for easy lookup
+            candidate_lookup = {c.id: c.name for c in candidates}
+
             # --- Generate CSV in memory ---
             output = io.StringIO()
             writer = csv.writer(output)
 
             # --- Write CSV header ---
-            # Voter ID + 7 EO columns + 8 Council columns
+            # Voter ID + 7 Executive columns + 8 Council columns
             header = ['Voter ID']
-            header.extend([f'Executive Officer {i+1}' for i in range(7)])
-            header.extend([f'Council Member {i+1}' for i in range(8)])
+            header.extend([f'Executive' for i in range(7)]) # Simplified header
+            header.extend([f'Council' for i in range(8)])   # Simplified header
             writer.writerow(header)
 
             # --- Write vote data ---
             # Assuming Vote objects have 'voter_id', 'selected_candidates', 'executive_candidates' attributes
             for vote in votes_data.votes:
                 row = [vote.voter_id] # Start with Voter ID
-                
-                # Add Executive Officers (up to 7)
+
+                # Add Executive Officers (up to 7) - Lookup names
                 # Ensure we only take the first 7 if there are somehow more
-                executive_list = vote.executive_candidates[:7] 
+                executive_names_list = [candidate_lookup.get(cid, f"Unknown ID: {cid}") for cid in vote.executive_candidates[:7]]
                 # Pad with empty strings if less than 7
-                executive_list.extend([''] * (7 - len(executive_list))) 
-                row.extend(executive_list)
-                
-                # Add remaining Council Members (up to 8)
+                executive_names_list.extend([''] * (7 - len(executive_names_list)))
+                row.extend(executive_names_list)
+
+                # Add remaining Council Members (up to 8) - Lookup names
                 # Filter out candidates already listed as Executive Officers
-                remaining_council = [cid for cid in vote.selected_candidates if cid not in set(vote.executive_candidates)]
+                remaining_council_ids = [cid for cid in vote.selected_candidates if cid not in set(vote.executive_candidates)]
                 # Ensure we only take the first 8 if there are more
-                remaining_council_list = remaining_council[:8] 
+                remaining_council_names_list = [candidate_lookup.get(cid, f"Unknown ID: {cid}") for cid in remaining_council_ids[:8]]
                 # Pad with empty strings if less than 8
-                remaining_council_list.extend([''] * (8 - len(remaining_council_list)))
-                row.extend(remaining_council_list)
-                
+                remaining_council_names_list.extend([''] * (8 - len(remaining_council_names_list)))
+                row.extend(remaining_council_names_list)
+
                 writer.writerow(row)
 
             # Get the CSV string
@@ -527,7 +531,7 @@ def create_app(config_name='default'):
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={"Content-Disposition": "attachment;filename=votes_export_format2.csv"} # Changed filename for clarity
+                headers={"Content-Disposition": "attachment;filename=votes_export_with_names.csv"} # Changed filename for clarity
             )
 
         except FileNotFoundError as e:
@@ -538,8 +542,7 @@ def create_app(config_name='default'):
             app.logger.error(f"Error exporting votes to CSV: {err}")
             # Return JSON error instead of CSV for general errors
             return jsonify({'message': 'An internal server error occurred during CSV export.'}), 500
-    # --- END NEW ROUTE ---
-    # --- THE FINAL LINE OF THE FUNCTION ---
+    # --- END NEW ROUTE ---    # --- THE FINAL LINE OF THE FUNCTION ---
     return app
 
 if __name__ == '__main__':
