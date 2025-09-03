@@ -2,6 +2,7 @@
 
 from flask import Flask, jsonify, request, send_from_directory, session, redirect, url_for, Response
 from flask_cors import CORS
+from functools import wraps
 import io
 import csv
 import os
@@ -28,6 +29,25 @@ def create_app(config_name='default'):
     voter_session = VoterSession()
 
     # In a real application, use proper authentication (e.g., JWT, sessions)
+    
+        def require_admin(func):
+        """Decorator to require admin access for a route."""
+        @wraps(func) # Preserves original function metadata
+        def wrapper(*args, **kwargs):
+            session_id = session.get('voter_session_id')
+            if not session_id:
+                return jsonify({'message': 'Authentication required'}), 401
+
+            voter_info = voter_session.get_session(session_id)
+            # Check if voter_info exists and if is_admin is True
+            if not voter_info or not voter_info.get('is_admin', False):
+                app.logger.warning(f"User {voter_info.get('email') if voter_info else 'Unknown'} attempted admin access without permission.")
+                return jsonify({'message': 'Admin access required'}), 403 # 403 Forbidden
+
+            # If user is authenticated and an admin, proceed
+            return func(*args, **kwargs)
+        return wrapper
+
     # For demo, we'll keep it simple
     DEMO_VOTER_IDS = set()
 
@@ -295,6 +315,7 @@ def create_app(config_name='default'):
     # @route   GET /api/admin/status
     # @access  Admin (in real app, protected)
     @app.route('/api/admin/status', methods=['GET'])
+    @require_admin
     def get_admin_status():
         try:
             status = get_election_status()
@@ -307,6 +328,7 @@ def create_app(config_name='default'):
     # @route   POST /api/admin/toggle
     # @access  Admin (in real app, protected)
     @app.route('/api/admin/toggle', methods=['POST'])
+    @require_admin
     def toggle_election_status():
         try:
             current_status = get_election_status()
@@ -326,6 +348,7 @@ def create_app(config_name='default'):
     # @route   GET /api/admin/export
     # @access  Admin (in real app, protected)
     @app.route('/api/admin/export', methods=['GET'])
+    @require_admin
     def export_votes():
         try:
             votes_data = get_votes()
@@ -367,7 +390,20 @@ def create_app(config_name='default'):
     # @route   GET /auth/google/callback
     # @access  Public
     @app.route('/auth/google/callback')
-    def google_callback():
+    def google_callback():    
+        user_email = user_info.get('email')
+    is_admin = False
+    if user_email:
+        # Get the comma-separated list from the environment variable
+        admin_emails_str = os.environ.get('PHOENIX_ADMIN_EMAILS', '') # Use a unique prefix
+        # Split into a list, removing any extra whitespace
+        admin_emails_list = [email.strip() for email in admin_emails_str.split(',') if email.strip()]
+        # Check if the user's email is in the list
+        if user_email in admin_emails_list:
+            is_admin = True
+            app.logger.info(f"[Admin] User {user_email} granted admin access via Google Auth.")
+        # else:
+        #     app.logger.info(f"[User] User {user_email} authenticated via Google Auth (not admin).")
         try:
             code = request.args.get('code')
             state = request.args.get('state')
@@ -394,6 +430,7 @@ def create_app(config_name='default'):
                 user_info['user_id'],
                 user_info['email'],
                 user_info['name']
+                is_admin=is_admin
             )
 
             # Store session ID in Flask session
@@ -427,6 +464,7 @@ def create_app(config_name='default'):
                 'email': voter_info['email']
             },
             'hasVoted': voter_info['has_voted']
+            'isAdmin': voter_info.get('is_admin', False) # Include admin status1
         }), 200
 
     # @desc    Logout voter
@@ -477,6 +515,7 @@ def create_app(config_name='default'):
     # @access  Admin (in real app, protected)
     # --- Moved to the end for better scope management ---
     @app.route('/api/admin/export-csv', methods=['GET'])
+    @require_admin
     def export_votes_to_csv():
         try:
             # --- Fetch data ---

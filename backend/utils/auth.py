@@ -131,7 +131,7 @@ class VoterSession:
         with open(self.sessions_file, 'w') as f:
             json.dump(self.sessions, f, indent=2)
     
-    def create_session(self, user_id: str, email: str, name: str) -> str:
+    def create_session(self, user_id: str, email: str, name: str, is_admin: bool = False) -> str:
         """Create a new voter session."""
         import uuid
         session_id = str(uuid.uuid4())
@@ -141,7 +141,8 @@ class VoterSession:
             'email': email,
             'name': name,
             'created_at': str(datetime.datetime.now()),
-            'has_voted': False
+            'has_voted': False,
+            'is_admin': is_admin
         }
         
         self._save_sessions()
