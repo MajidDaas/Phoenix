@@ -472,7 +472,7 @@ def create_app(config_name='default'):
             return jsonify({'message': 'Demo authentication failed'}), 500
 
     # --- NEW ROUTE: Export votes to CSV ---
-    # @desc    Export votes to CSV
+    # @desc    Export votes to CSV (Updated Format)
     # @route   GET /api/admin/export-csv
     # @access  Admin (in real app, protected)
     # --- Moved to the end for better scope management ---
@@ -484,29 +484,39 @@ def create_app(config_name='default'):
             votes_data = get_votes()
             candidates = get_candidates()
 
-            # --- Create candidate lookup dict ---
-            # Map candidate ID to candidate name for easy lookup
-            # Assuming Candidate objects have 'id' and 'name' attributes
-            candidate_lookup = {c.id: c.name for c in candidates}
-
             # --- Generate CSV in memory ---
             output = io.StringIO()
             writer = csv.writer(output)
 
-            # Write CSV header
-            writer.writerow(['Voter ID', 'Candidate ID', 'Candidate Name', 'Vote Type'])
+            # --- Write CSV header ---
+            # Voter ID + 7 EO columns + 8 Council columns
+            header = ['Voter ID']
+            header.extend([f'Executive Officer {i+1}' for i in range(7)])
+            header.extend([f'Council Member {i+1}' for i in range(8)])
+            writer.writerow(header)
 
-            # Write vote data
+            # --- Write vote data ---
             # Assuming Vote objects have 'voter_id', 'selected_candidates', 'executive_candidates' attributes
             for vote in votes_data.votes:
-                # Write Council Votes
-                for candidate_id in vote.selected_candidates:
-                    candidate_name = candidate_lookup.get(candidate_id, f"Unknown ID: {candidate_id}")
-                    writer.writerow([vote.voter_id, candidate_id, candidate_name, 'Council'])
-                # Write Executive Votes
-                for candidate_id in vote.executive_candidates:
-                    candidate_name = candidate_lookup.get(candidate_id, f"Unknown ID: {candidate_id}")
-                    writer.writerow([vote.voter_id, candidate_id, candidate_name, 'Executive'])
+                row = [vote.voter_id] # Start with Voter ID
+                
+                # Add Executive Officers (up to 7)
+                # Ensure we only take the first 7 if there are somehow more
+                executive_list = vote.executive_candidates[:7] 
+                # Pad with empty strings if less than 7
+                executive_list.extend([''] * (7 - len(executive_list))) 
+                row.extend(executive_list)
+                
+                # Add remaining Council Members (up to 8)
+                # Filter out candidates already listed as Executive Officers
+                remaining_council = [cid for cid in vote.selected_candidates if cid not in set(vote.executive_candidates)]
+                # Ensure we only take the first 8 if there are more
+                remaining_council_list = remaining_council[:8] 
+                # Pad with empty strings if less than 8
+                remaining_council_list.extend([''] * (8 - len(remaining_council_list)))
+                row.extend(remaining_council_list)
+                
+                writer.writerow(row)
 
             # Get the CSV string
             csv_data = output.getvalue()
@@ -514,11 +524,10 @@ def create_app(config_name='default'):
 
             # --- Prepare response ---
             # Create a response object to handle file download
-            # from flask import Response # <-- Removed redundant import
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={"Content-Disposition": "attachment;filename=votes_export.csv"}
+                headers={"Content-Disposition": "attachment;filename=votes_export_format2.csv"} # Changed filename for clarity
             )
 
         except FileNotFoundError as e:
@@ -530,7 +539,6 @@ def create_app(config_name='default'):
             # Return JSON error instead of CSV for general errors
             return jsonify({'message': 'An internal server error occurred during CSV export.'}), 500
     # --- END NEW ROUTE ---
-
     # --- THE FINAL LINE OF THE FUNCTION ---
     return app
 
