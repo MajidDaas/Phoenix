@@ -18,7 +18,8 @@ def create_app(config_name='default'):
     config[config_name].init_app(app)
 
     # Enable CORS for development
-    CORS(app, origins=['https://majiddaas2.pythonanywhere.com  ', 'http://127.0.0.1:5001'], supports_credentials=True)
+    # Note: Extra spaces in origins list might cause issues, consider trimming if needed.
+    CORS(app, origins=['https://majiddaas2.pythonanywhere.com', 'http://127.0.0.1:5001'], supports_credentials=True)
 
     # Initialize Google OAuth2 and voter session management
     google_auth = GoogleAuth(
@@ -29,9 +30,16 @@ def create_app(config_name='default'):
     voter_session = VoterSession()
 
     # In a real application, use proper authentication (e.g., JWT, sessions)
-    
-        def require_admin(func):
-        """Decorator to require admin access for a route."""
+    # For demo, we'll keep it simple
+    DEMO_VOTER_IDS = set()
+
+    # --- Helper Functions ---
+
+    def require_admin(func):
+        """
+        Decorator to require admin access for a route.
+        Checks if the user is authenticated and has the 'is_admin' flag set in their session.
+        """
         @wraps(func) # Preserves original function metadata
         def wrapper(*args, **kwargs):
             session_id = session.get('voter_session_id')
@@ -41,15 +49,13 @@ def create_app(config_name='default'):
             voter_info = voter_session.get_session(session_id)
             # Check if voter_info exists and if is_admin is True
             if not voter_info or not voter_info.get('is_admin', False):
-                app.logger.warning(f"User {voter_info.get('email') if voter_info else 'Unknown'} attempted admin access without permission.")
+                user_email = voter_info.get('email') if voter_info else 'Unknown'
+                app.logger.warning(f"User {user_email} attempted admin access without permission.")
                 return jsonify({'message': 'Admin access required'}), 403 # 403 Forbidden
 
             # If user is authenticated and an admin, proceed
             return func(*args, **kwargs)
         return wrapper
-
-    # For demo, we'll keep it simple
-    DEMO_VOTER_IDS = set()
 
     # --- API Routes ---
 
@@ -79,7 +85,6 @@ def create_app(config_name='default'):
             # --- Construct the path to the candidates.json file ---
             # Assumes this file (app.py) is in the backend/ directory
             # and data/ is a subdirectory of backend/
-            import os  # Ensure os is imported
             backend_dir = os.path.dirname(os.path.abspath(__file__))
             data_dir = os.path.join(backend_dir, 'data')
             candidates_file_path = os.path.join(data_dir, 'candidates.json')
@@ -90,7 +95,7 @@ def create_app(config_name='default'):
                 return jsonify({"message": "Candidates data file not found on server."}), 404
 
             # --- Read the JSON data from the file ---
-            import json  # Ensure json is imported
+            import json  # Ensure json is imported locally if needed
             with open(candidates_file_path, 'r') as f:
                 candidates_data = json.load(f)
 
@@ -111,7 +116,6 @@ def create_app(config_name='default'):
             # Handle any other unexpected errors (e.g., permissions)
             app.logger.error(f"Unexpected error fetching candidates: {e}")
             return jsonify({"message": "An internal server error occurred while fetching candidates."}), 500
-
 
     # @desc    Request a voter ID (simulated)
     # @route   POST /api/votes/request-id
@@ -213,8 +217,18 @@ def create_app(config_name='default'):
         if len(executive_candidates) != MAX_EXECUTIVES:
             return jsonify({'message': f'You must select exactly {MAX_EXECUTIVES} executive officers'}), 400
 
-        # Validate candidate IDs
-        candidate_ids = [c.id for c in get_candidates()]
+        # Validate candidate IDs (assuming get_candidates returns objects with an 'id' attribute)
+        # This part might need adjustment based on your Candidate model's structure
+        try:
+            candidate_objects = get_candidates()
+            candidate_ids = [c.id for c in candidate_objects]
+        except AttributeError:
+             app.logger.error("Candidate objects do not have an 'id' attribute.")
+             return jsonify({'message': 'Server configuration error: Candidate data invalid.'}), 500
+        except Exception as e:
+             app.logger.error(f"Error fetching candidate IDs: {e}")
+             return jsonify({'message': 'Server error while validating candidates.'}), 500
+
         invalid_selected = any(id not in candidate_ids for id in selected_candidates)
         invalid_executives = any(id not in candidate_ids for id in executive_candidates)
 
@@ -267,11 +281,20 @@ def create_app(config_name='default'):
             }), 200
 
         # Calculate results
-        results = {c.id: {
-            **c.to_dict(),
-            'councilVotes': 0,
-            'executiveVotes': 0
-        } for c in candidates}
+        # Ensure candidates have a to_dict() method or adjust accordingly
+        try:
+            results = {c.id: {
+                **c.to_dict(), # Requires Candidate model to have to_dict()
+                'councilVotes': 0,
+                'executiveVotes': 0
+            } for c in candidates}
+        except AttributeError:
+             app.logger.error("Candidate objects do not have a 'to_dict' method.")
+             return jsonify({'message': 'Server configuration error: Candidate data invalid for results.'}), 500
+        except Exception as e:
+             app.logger.error(f"Error preparing candidate results data: {e}")
+             return jsonify({'message': 'Server error while calculating results.'}), 500
+
 
         for vote in votes_data.votes:
             for id in vote.selected_candidates:
@@ -283,7 +306,8 @@ def create_app(config_name='default'):
 
         # Convert to array and sort
         results_array = list(results.values())
-        results_array.sort(key=lambda x: (x['councilVotes'], x['executiveVotes']), reverse=True) # Sort by council votes, then executive votes
+        # Sort by council votes DESC, then executive votes DESC
+        results_array.sort(key=lambda x: (x['councilVotes'], x['executiveVotes']), reverse=True)
 
         return jsonify({
             'isOpen': False,
@@ -294,7 +318,7 @@ def create_app(config_name='default'):
             }
         }), 200
 
-    # @desc    Authenticate admin
+    # @desc    Authenticate admin (Password-based - kept for potential legacy/backup use)
     # @route   POST /api/admin/auth
     # @access  Public
     @app.route('/api/admin/auth', methods=['POST'])
@@ -313,7 +337,7 @@ def create_app(config_name='default'):
 
     # @desc    Get election status
     # @route   GET /api/admin/status
-    # @access  Admin (in real app, protected)
+    # @access  Admin (protected by require_admin)
     @app.route('/api/admin/status', methods=['GET'])
     @require_admin
     def get_admin_status():
@@ -321,12 +345,12 @@ def create_app(config_name='default'):
             status = get_election_status()
             return jsonify(status.to_dict()), 200
         except Exception as err:
-            app.logger.error(err)
+            app.logger.error(f"Error getting admin status: {err}")
             return jsonify({'message': 'Server error'}), 500
 
     # @desc    Toggle election status
     # @route   POST /api/admin/toggle
-    # @access  Admin (in real app, protected)
+    # @access  Admin (protected by require_admin)
     @app.route('/api/admin/toggle', methods=['POST'])
     @require_admin
     def toggle_election_status():
@@ -341,21 +365,24 @@ def create_app(config_name='default'):
             else:
                 return jsonify({'message': 'Failed to update election status'}), 500
         except Exception as err:
-            app.logger.error(err)
+            app.logger.error(f"Error toggling election status: {err}")
             return jsonify({'message': 'Server error'}), 500
 
-    # @desc    Export votes (simplified)
+    # @desc    Export votes (simplified JSON)
     # @route   GET /api/admin/export
-    # @access  Admin (in real app, protected)
+    # @access  Admin (protected by require_admin)
     @app.route('/api/admin/export', methods=['GET'])
     @require_admin
     def export_votes():
         try:
             votes_data = get_votes()
             # In a real app, you might want to format this differently or use a file response
-            return jsonify(votes_data.to_dict()), 200
+            return jsonify(votes_data.to_dict()), 200 # Requires VotesData model to have to_dict()
+        except AttributeError:
+             app.logger.error("VotesData object does not have a 'to_dict' method.")
+             return jsonify({'message': 'Server configuration error: Vote data invalid for export.'}), 500
         except Exception as err:
-            app.logger.error(err)
+            app.logger.error(f"Error exporting votes (JSON): {err}")
             return jsonify({'message': 'Server error'}), 500
 
     # --- Google OAuth2 Routes ---
@@ -376,9 +403,6 @@ def create_app(config_name='default'):
                     'error': 'oauth_not_configured'
                 }), 500
 
-            # For demo purposes, if Google OAuth2 fails, suggest using demo mode
-            # This will be caught by the frontend and show a helpful message
-
             authorization_url, state = google_auth.get_authorization_url()
             session['oauth_state'] = state
             return redirect(authorization_url)
@@ -390,20 +414,7 @@ def create_app(config_name='default'):
     # @route   GET /auth/google/callback
     # @access  Public
     @app.route('/auth/google/callback')
-    def google_callback():    
-        user_email = user_info.get('email')
-    is_admin = False
-    if user_email:
-        # Get the comma-separated list from the environment variable
-        admin_emails_str = os.environ.get('PHOENIX_ADMIN_EMAILS', '') # Use a unique prefix
-        # Split into a list, removing any extra whitespace
-        admin_emails_list = [email.strip() for email in admin_emails_str.split(',') if email.strip()]
-        # Check if the user's email is in the list
-        if user_email in admin_emails_list:
-            is_admin = True
-            app.logger.info(f"[Admin] User {user_email} granted admin access via Google Auth.")
-        # else:
-        #     app.logger.info(f"[User] User {user_email} authenticated via Google Auth (not admin).")
+    def google_callback():
         try:
             code = request.args.get('code')
             state = request.args.get('state')
@@ -421,16 +432,32 @@ def create_app(config_name='default'):
             if not user_info:
                 return jsonify({'message': 'Failed to verify user identity'}), 400
 
+            # --- Check for Admin Access AFTER user_info is available ---
+            user_email = user_info.get('email')
+            is_admin = False
+            if user_email:
+                # Get the comma-separated list from the environment variable
+                admin_emails_str = os.environ.get('PHOENIX_ADMIN_EMAILS', '')
+                # Split into a list, removing any extra whitespace
+                admin_emails_list = [email.strip() for email in admin_emails_str.split(',') if email.strip()]
+                # Check if the user's email is in the list
+                if user_email in admin_emails_list:
+                    is_admin = True
+                    app.logger.info(f"[Admin] User {user_email} granted admin access via Google Auth.")
+                # else:
+                #     app.logger.info(f"[User] User {user_email} authenticated via Google Auth (not admin).")
+            # --- End Admin Check ---
+
             # Check if user has already voted
             if voter_session.has_voted(user_info['user_id']):
                 return jsonify({'message': 'You have already voted in this election'}), 400
 
-            # Create voter session
+            # Create voter session (pass the is_admin flag)
             session_id = voter_session.create_session(
                 user_info['user_id'],
                 user_info['email'],
-                user_info['name']
-                is_admin=is_admin
+                user_info['name'],
+                is_admin=is_admin # Pass the calculated is_admin flag
             )
 
             # Store session ID in Flask session
@@ -457,15 +484,17 @@ def create_app(config_name='default'):
         if not voter_info:
             return jsonify({'message': 'Invalid session'}), 401
 
+        # --- FIX: Add missing comma ---
         return jsonify({
             'authenticated': True,
             'user': {
                 'name': voter_info['name'],
                 'email': voter_info['email']
             },
-            'hasVoted': voter_info['has_voted']
-            'isAdmin': voter_info.get('is_admin', False) # Include admin status1
+            'hasVoted': voter_info['has_voted'], # <-- Comma added here
+            'isAdmin': voter_info.get('is_admin', False) # Include admin status
         }), 200
+        # --- End FIX ---
 
     # @desc    Logout voter
     # @route   POST /api/auth/logout
@@ -482,12 +511,13 @@ def create_app(config_name='default'):
     @app.route('/api/auth/demo', methods=['POST'])
     def demo_auth():
         try:
-            # Create a demo session
+            # Create a demo session (not an admin by default in demo mode)
             demo_user_id = f"DEMO_USER_{uuid.uuid4().hex[:8].upper()}"
             session_id = voter_session.create_session(
                 demo_user_id,
                 'demo@example.com',
-                'Demo User'
+                'Demo User',
+                is_admin=False # Explicitly set is_admin=False for demo users
             )
 
             # Store session ID in Flask session
@@ -512,14 +542,12 @@ def create_app(config_name='default'):
     # --- NEW ROUTE: Export votes to CSV ---
     # @desc    Export votes to CSV (Updated Format with Names)
     # @route   GET /api/admin/export-csv
-    # @access  Admin (in real app, protected)
-    # --- Moved to the end for better scope management ---
+    # @access  Admin (protected by require_admin)
     @app.route('/api/admin/export-csv', methods=['GET'])
     @require_admin
     def export_votes_to_csv():
         try:
             # --- Fetch data ---
-            # Use the existing utility functions from utils.data_handler
             votes_data = get_votes()
             candidates = get_candidates()
 
@@ -532,30 +560,24 @@ def create_app(config_name='default'):
             writer = csv.writer(output)
 
             # --- Write CSV header ---
-            # Voter ID + 7 Executive columns + 8 Council columns
             header = ['Voter ID']
-            header.extend([f'Executive' for i in range(7)]) # Simplified header
-            header.extend([f'Council' for i in range(8)])   # Simplified header
+            header.extend([f'Executive {i+1}' for i in range(7)])
+            header.extend([f'Council {i+1}' for i in range(8)])
             writer.writerow(header)
 
             # --- Write vote data ---
-            # Assuming Vote objects have 'voter_id', 'selected_candidates', 'executive_candidates' attributes
             for vote in votes_data.votes:
                 row = [vote.voter_id] # Start with Voter ID
 
                 # Add Executive Officers (up to 7) - Lookup names
-                # Ensure we only take the first 7 if there are somehow more
                 executive_names_list = [candidate_lookup.get(cid, f"Unknown ID: {cid}") for cid in vote.executive_candidates[:7]]
-                # Pad with empty strings if less than 7
                 executive_names_list.extend([''] * (7 - len(executive_names_list)))
                 row.extend(executive_names_list)
 
                 # Add remaining Council Members (up to 8) - Lookup names
                 # Filter out candidates already listed as Executive Officers
                 remaining_council_ids = [cid for cid in vote.selected_candidates if cid not in set(vote.executive_candidates)]
-                # Ensure we only take the first 8 if there are more
                 remaining_council_names_list = [candidate_lookup.get(cid, f"Unknown ID: {cid}") for cid in remaining_council_ids[:8]]
-                # Pad with empty strings if less than 8
                 remaining_council_names_list.extend([''] * (8 - len(remaining_council_names_list)))
                 row.extend(remaining_council_names_list)
 
@@ -566,22 +588,21 @@ def create_app(config_name='default'):
             output.close()
 
             # --- Prepare response ---
-            # Create a response object to handle file download
             return Response(
                 csv_data,
                 mimetype='text/csv',
-                headers={"Content-Disposition": "attachment;filename=votes_export_with_names.csv"} # Changed filename for clarity
+                headers={"Content-Disposition": "attachment;filename=votes_export_with_names.csv"}
             )
 
         except FileNotFoundError as e:
             app.logger.error(f"Data file not found during CSV export: {e}")
-            # Return JSON error instead of CSV if file is missing
             return jsonify({'message': 'Required data file not found for export.'}), 404
         except Exception as err:
             app.logger.error(f"Error exporting votes to CSV: {err}")
-            # Return JSON error instead of CSV for general errors
             return jsonify({'message': 'An internal server error occurred during CSV export.'}), 500
-    # --- END NEW ROUTE ---    # --- THE FINAL LINE OF THE FUNCTION ---
+    # --- END NEW ROUTE ---
+
+    # --- THE FINAL LINE OF THE FUNCTION ---
     return app
 
 if __name__ == '__main__':
