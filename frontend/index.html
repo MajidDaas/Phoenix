@@ -207,12 +207,18 @@
                         <label for="adminPassword">Admin Password:</label>
                         <input type="password" id="adminPassword" placeholder="Enter admin password">
                     </div>
-                    <button class="btn" id="authAdminBtn" type="button">
-                        <i class="fas fa-sign-in-alt"></i> Authenticate
+                    <button class="btn" id="authAdminBtn">
+                        <i class="fas fa-sign-in-alt"></i> Authenticate with Password
                     </button>
+                    <div class="google-auth-section">
+                         <p><strong>Or, Sign in with your Google account:</strong></p>
+                         <button class="btn google-signin-btn" id="googleAdminSigninBtn">
+                             <i class="fab fa-google"></i> Sign in with Google (Admin)
+                         </button>
+                         <p class="demo-note"><small>Note: Google OAuth2 grants admin access only to pre-configured emails.</small></p>
+                    </div>
                     <div id="adminAuthLoading" class="loader hidden"></div>
-                </div>
-                <div class="card hidden" id="adminControls">
+                </div>                <div class="card hidden" id="adminControls">
                     <h3><i class="fas fa-tasks"></i> Election Controls</h3>
                     <div class="form-group">
                         <label>Election Status:</label>

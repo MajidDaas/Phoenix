@@ -521,6 +521,42 @@ document.addEventListener('click', function(event) {
 // --- Voting Process Functions ---
 
 // Request voter ID
+// Google OAuth2 Authentication for Admin Tab
+// Redirects the browser window to initiate Google login for potential admin access.
+async function signInWithGoogleForAdmin() {
+    try {
+        // Show loading state on the admin-specific button
+        const googleAdminBtn = document.getElementById('googleAdminSigninBtn');
+        const adminAuthLoading = document.getElementById('adminAuthLoading');
+
+        if (googleAdminBtn && adminAuthLoading) {
+            googleAdminBtn.disabled = true;
+            adminAuthLoading.classList.remove('hidden');
+        }
+
+        // --- CHANGE: Redirect the browser window ---
+        // This avoids CORS issues and initiates the standard OAuth2 flow.
+        // The backend will check if the email is in PHOENIX_ADMIN_EMAILS.
+        window.location.href = '/auth/google/login';
+        // --- END CHANGE ---
+
+        // Note: Because we redirect, code after window.location.href might not run
+        // depending on how quickly the redirect happens.
+
+    } catch (err) {
+        console.error('Error initiating Google admin sign-in redirect:', err);
+        showMessage('An error occurred while redirecting to Google. Please try again.', 'error');
+    } finally {
+        // Hide loading state (this might not run if redirect is fast)
+        // It's good practice, and harmless if the page unloads first.
+        const googleAdminBtn = document.getElementById('googleAdminSigninBtn');
+        const adminAuthLoading = document.getElementById('adminAuthLoading');
+        if (googleAdminBtn && adminAuthLoading) {
+            googleAdminBtn.disabled = false;
+            adminAuthLoading.classList.add('hidden');
+        }
+    }
+}
 // Google OAuth2 Authentication - FIXED TO AVOID CORS
 async function signInWithGoogle() {
     try {
@@ -947,6 +983,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Admin buttons
     document.getElementById('authAdminBtn').addEventListener('click', authenticateAdmin);
+    document.getElementById('googleAdminSigninBtn').addEventListener('click', signInWithGoogleForAdmin);
     document.getElementById('electionToggle').addEventListener('click', toggleElection);
     document.getElementById('refreshDataBtn').addEventListener('click', refreshData);
     document.getElementById('exportVotesBtn').addEventListener('click', exportVotes);
